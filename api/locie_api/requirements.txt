@@ -1,8 +1,0 @@
-dataclasses==0.6
-Django==2.2.6
-djangorestframework==3.10.3
-djongo==1.2.36
-psycopg2==2.8.3
-pymongo==3.9.0
-pytz==2019.3
-sqlparse==0.2.4
