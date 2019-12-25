@@ -97,11 +97,11 @@ WSGI_APPLICATION = 'locie_server.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
-        'NAME': 'imango',
+        'NAME': 'gispomedb',#'imango',
         'HOST':'localhost',
         'PORT':'5432',
-        'USER':'postgres',
-        'PASSWORD':'piyush@103'
+        'USER':'gipsome',#'postgres',
+        'PASSWORD':'krispi@103904'#'piyush@103'
     }
 }
 
