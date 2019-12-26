@@ -2,7 +2,7 @@ from rest_framework import serializers
 from rest_framework.authtoken.models import Token
 from .models import Account, AccountManager
 from .models import *
-from .serverOps import servei_id_creatore, de_id_creatore
+from .serverOps import servei_id_creatore, pilot_id_creatore
 
 
 class AccountCreationSerializer(serializers.ModelSerializer):
