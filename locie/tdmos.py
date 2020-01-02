@@ -36,12 +36,24 @@ import asyncio
 class OrderCreate(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
+    """
+      Client will push
+      customer_id, items_data,serveis,items,customer_price,order_type,customer_address,customer_coords,delivery_type,cityCode
+      Needed to add servei_cluster,store_cluster
+    """
 
     def post(self, request, format=None):
 
         order = OrderSerialzer(data=request.POST)
         if order.is_valid():
             order.data['order_id'] = TDMOS().order_id_generator(request.POST)
+            for item in order.data['items']:
+                order.data['servei_cluster'][order.data['items_data'][item][0]] = order.data['servei_cluster'][order.data['items_data'][item][0]].append(item) if order.data['servei_cluster'][order.data['items_data'][item][0]] is not None else [item]
+            for servei in order.data['serveis']:
+                servei_object = Servei.objects.get(servei_id=servei)
+                if not servei_object.store in order.data['store_cluster']:
+                    order.data['store_cluster'].append(servei_object.store)
+                
             order.save()
             TDMOS().ignite(order.data['order_id'])
             return Response(order.data, status=status.HTTP_201_CREATED)

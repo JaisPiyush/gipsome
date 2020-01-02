@@ -25,7 +25,12 @@ SECRET_KEY = '%^*2esaf@ou%psce0oc%^tqw@)_55_=f#0wr24-q=ktx^!_zi3'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['ec2-13-233-123-86.ap-south-1.compute.amazonaws.com', '13.233.123.86']
+ALLOWED_HOSTS =['ec2-13-233-123-86.ap-south-1.compute.amazonaws.com', '13.233.123.86']
+
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 20
+}
 
 
 # Application definition
@@ -97,12 +102,20 @@ WSGI_APPLICATION = 'locie_server.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
-        'NAME': 'gipsomedb',#'imango',
+        'NAME': 'gipsomedb',
         'HOST':'localhost',
         'PORT':'5432',
-        'USER':'gipsome',#'postgres',
-        'PASSWORD':'krispi@103904'#'piyush@103'
+        'USER':'gipsome',
+        'PASSWORD':'krispi@103904'
     }
+    # 'default': {
+    #     'ENGINE': 'django.contrib.gis.db.backends.postgis',
+    #     'NAME': 'imango',
+    #     'HOST':'localhost',
+    #     'PORT':'5432',
+    #     'USER':'postgres',
+    #     'PASSWORD':'piyush@103'
+    # }
 }
 
 

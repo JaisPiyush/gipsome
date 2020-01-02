@@ -46,3 +46,11 @@ class CoordinatesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Coordinates
         fields = '__all__'
+
+# class FetchedItemSerializer(serializers.ModelSerializer):
+#     """
+#       sends item_id,name,allowed,price,measure,ratings
+#     """
+#     class Meta:
+#         model = Item
+#         fields = ('item_id','name','allowed','price','measure','ratings')

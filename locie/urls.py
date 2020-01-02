@@ -11,5 +11,9 @@ urlpatterns = [
     # one account
     path('account/',CustomerLogin.as_view()),
     path('cityCode/',CityCodeCreator.as_view()),
+    #Analytics
+    path('analytics/',Analytics.as_view()),
+    # Items Extractor
+    path('items-extractor/<str:store_key>',ItemExtractor.as_view())
 
 ]

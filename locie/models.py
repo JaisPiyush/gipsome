@@ -83,12 +83,12 @@ class Item(models.Model):
 
     name = models.CharField(max_length=30, db_index=True, default='')
     # itemId example --> UP536167!tem[time(till ms)]
-    itemId = models.CharField(
+    item_id = models.CharField(
         max_length=20, db_index=True, primary_key=True, default='')
     # Store Key
     store_key = models.CharField(max_length=50, db_index=True, default='')
     # use this locate all the items served by any servei
-    serveiId = models.CharField(max_length=20, db_index=True, default='')
+    servei_id = models.CharField(max_length=20, db_index=True, default='')
     # Basic Location of Item
     city = models.CharField(max_length=20, default='')
     cityCode = models.CharField(max_length=5, db_index=True, default='')
@@ -135,7 +135,7 @@ class Item(models.Model):
 
 # Position Database
 class Coordinates(models.Model):
-    uniqueId = models.CharField(max_length=50, primary_key=True, default='')
+    unique_id = models.CharField(max_length=50, primary_key=True, default='')
     # 001 : Servei, 002: DE, 009: customer, 100: Locie , 904: Store
     relation = models.CharField(max_length=10,default='',db_index=True)
     reference_id = models.CharField(
@@ -148,7 +148,7 @@ class Coordinates(models.Model):
 
 # Servei Model
 class Servei(models.Model):
-    serveiId = models.CharField(
+    servei_id = models.CharField(
         max_length=30, db_index=True, primary_key=True, default='')
     account = models.OneToOneField(
         Account, on_delete=models.CASCADE, null=True)
@@ -296,20 +296,25 @@ class OfficialRequest(models.Model):
 
 class Order(models.Model):
 
-    orderId = models.CharField(
+    order_id = models.CharField(
         max_length=30, default='', unique=True, primary_key=True, db_index=True)
 
     # Item Data
     # List with Item Id
     items = ArrayField(models.CharField(max_length=30), default=list)
     # Dict with ItemId as key and another Dict as value with serveiId,amount and price as another keys
+    # 'item_id':['servei_id,price,eff_price,amount]
     items_data = JSONField(default=dict)
     # ServeiId list  Used for Notification Services
     serveis = ArrayField(models.CharField(max_length=30), default=list)
     # Dict of serveiId as key and List of Items as values
     servei_cluster = JSONField(default=dict)
     # Servei as key and total price Locie to pay as value
+    # servei_id as key, effective_price servei will get is value --filled after acceptance motor will fill this
     servei_price_cluster = JSONField(default=dict)
+
+    #stores cluster, store_keys as List
+    store_cluster = ArrayField(models.CharField(max_length=50),default=dict)
 
     # final servei--> those accepted
     final_servei = ArrayField(models.CharField(max_length=30), default=list)
@@ -320,9 +325,11 @@ class Order(models.Model):
     # Key pait of servei: items for better consideration
     final_pair = JSONField(default=dict)
 
-    # Amount user to pay
-    user_price = models.DecimalField(
+    # Amount Customer to pay
+    customer_price = models.DecimalField(
         max_digits=7, decimal_places=2, default=0.00)
+   
+  
 
     # FOR ORder Status management
     # SEE  <TDMOS> in logic.md
@@ -340,9 +347,18 @@ class Order(models.Model):
     
     # Customer Id
     customer_id = models.CharField(max_length=15,db_index=True,default='')
+    #Customer address
+    customer_address = models.TextField(default='')
+    #customer_location
+    customer_coords = models.TextField(default='')
 
     # Final response i.e Successfull or Cancelled
     final_response = models.IntegerField(default=0000)
+
+    #Date of order creation
+    date_of_creation = models.DateField(auto_now_add=True)
+    # Time of order creation
+    time_of_creation = models.TimeField(auto_now_add=True)
 
     # Time left for delivery
     # time(datetime.datetime.now().hour,datetime.datetime.now().minute,datetime.datetime.now().seconds))
@@ -362,7 +378,7 @@ class Order(models.Model):
 # Category
 
 class Category(models.Model):
-    catId = models.CharField(
+    cat_id = models.CharField(
         max_length=30, db_index=True, default=True, unique=True)
     name = models.CharField(max_length=30, db_index=True, default='')
     prevCat = models.CharField(max_length=20, default='')
@@ -567,7 +583,6 @@ class Pilot(models.Model):
     #No. of order on time
     weight = models.IntegerField(default=0,db_index=True)
     
-
 
     
 
