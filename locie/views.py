@@ -147,6 +147,17 @@ class CityCodeCreator(APIView):
             city.save()
             return Response({'cityCode': city.cityCode, 'pin_codes': city.pin_codes})
 
+class CityCodeCreate(APIView):
+    permission_classes = [AllowAny]
+    """
+      Mock Code Create untill th eabove class is rectified
+    """
+
+    def post(self, request, format=None):
+        if request.POST['cityCode'] and request.POST['pin_code'] and not CityCode.objects.get(CityCode=request.POST['cityCode']):
+            city = CityCode.objects.create(state=request.POST['state'],city=request.POST['city'],cityCode=request.POST['cityCode'],pin_code = [request.POST['pin_code']])
+            return Response({'cityCode':city.cityCode},status=status.HTTP_201_CREATED)
+
 
 # Portfolio Import
 # Only Name and phone_number and address
