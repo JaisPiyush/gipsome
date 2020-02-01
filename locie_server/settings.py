@@ -25,7 +25,7 @@ SECRET_KEY = '%^*2esaf@ou%psce0oc%^tqw@)_55_=f#0wr24-q=ktx^!_zi3'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['ec2-13-126-115-213.ap-south-1.compute.amazonaws.com', '13.126.115.213',]
+ALLOWED_HOSTS = []#['ec2-13-126-115-213.ap-south-1.compute.amazonaws.com', '13.126.115.213',]
 
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
@@ -51,9 +51,7 @@ INSTALLED_APPS = [
 #AUTH USER MODEL
 AUTH_USER_MODEL = 'locie.Account'
 
-FCM_DJANGO_SETTINGS = {
-    'FCM_SERVER_KEY':'AIzaSyCTg3L22YePlkbu2zbUcZd3y8bYxKuAB4I'
-}
+
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
@@ -100,22 +98,22 @@ WSGI_APPLICATION = 'locie_server.wsgi.application'
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.contrib.gis.db.backends.postgis',
-        'NAME': 'gipsomedb',
-        'HOST':'localhost',
-        'PORT':'5432',
-        'USER':'gipsome',
-        'PASSWORD':'krispi@103904'
-    }
     # 'default': {
     #     'ENGINE': 'django.contrib.gis.db.backends.postgis',
-    #     'NAME': 'imango',
+    #     'NAME': 'gipsomedb',
     #     'HOST':'localhost',
     #     'PORT':'5432',
-    #     'USER':'postgres',
-    #     'PASSWORD':'piyush@103'
+    #     'USER':'gipsome',
+    #     'PASSWORD':'krispi@103904'
     # }
+    'default': {
+        'ENGINE': 'django.contrib.gis.db.backends.postgis',
+        'NAME': 'imango',
+        'HOST':'localhost',
+        'PORT':'5432',
+        'USER':'postgres',
+        'PASSWORD':'piyush@103'
+    }
 }
 
 

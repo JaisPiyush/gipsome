@@ -4,7 +4,7 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
-from rest_framework.generics import GenericAPIView,ListAPIView
+from rest_framework.generics import GenericAPIView, ListAPIView
 from rest_framework.views import Response
 from rest_framework import status
 from .serializers import AccountCreationSerializer
@@ -69,8 +69,8 @@ class CreateStoreView(APIView):
 
             servei.store_key = store.store_key
             servei.save()
-            coords = Coordinates(unique_id=coord_id_generator(store.cityCode, store.store_key),
-                                 relation='904', reference_id=store.store_key, cityCode=store.cityCode)
+            coords = Coordinates.objects.create(unique_id=coord_id_generator(store.cityCode, store.store_key),
+                                 relation='904', reference_id=store.store_key, cityCode=store.cityCode,position = Point(request.POST['address']['coordinates']['latitude'],request.POST['coordinates']['longitude']))
             store.coordinates = coords.unique_id
             store.save()
             store_serial = StoreSerializer(store)
@@ -130,33 +130,26 @@ class OtpCreator(APIView):
 # Need Fixing
 
 
-class CityCodeCreator(APIView):
-    permission_classes = [AllowAny]
-
-    def post(self, request, format=None):
-        if not CityCode.objects.get(cityCode=request.POST['cityCode']):
-            city = CityCode.objects.create(
-                city=request.POST['city'], state=request.POST['state'], cityCode=request.POST['cityCode'], pin_codes=[request.POST['pin_code']])
-            serial_code = CityCodeSerializer()
-            if serial_code.is_valid():
-                serial_code.save()
-                return Response(serial_code.data, status=status.HTTP_201_CREATED)
-        elif CityCode.objects.get(cityCode=CityManager().get_code(pin_code=request.POST['pin_code'])):
-            city = CityCode.objects.get(cityCode=request.POST['cityCode'])
-            city.pin_codes = city.pin_codes.append(request.POST['pin_code'])
-            city.save()
-            return Response({'cityCode': city.cityCode, 'pin_codes': city.pin_codes})
-
 class CityCodeCreate(APIView):
     permission_classes = [AllowAny]
     """
       Mock Code Create untill th eabove class is rectified
+      TODO: Add functionality to add multiple pin_codes at same time
     """
 
     def post(self, request, format=None):
-        if request.POST['cityCode'] and request.POST['pin_code'] and not CityCode.objects.get(CityCode=request.POST['cityCode']):
-            city = CityCode.objects.create(state=request.POST['state'],city=request.POST['city'],cityCode=request.POST['cityCode'],pin_code = [request.POST['pin_code']])
-            return Response({'cityCode':city.cityCode},status=status.HTTP_201_CREATED)
+        if request.POST['cityCode'] and request.POST['pin_code'] and not CityCode.objects.get(cityCode=request.POST['cityCode']):
+            city = CityCode.objects.create(
+                state=request.POST['state'], city=request.POST['city'], cityCode=request.POST['cityCode'], pin_code=[request.POST['pin_code']])
+            return Response({'cityCode': city.cityCode}, status=status.HTTP_201_CREATED)
+        elif request.POST['cityCode'] and request.POST['pin_code'] and CityCode.objects.get(cityCode=request.POST['cityCode']):
+            city = CityCode.objects.get(cityCode=request.POST['cityCode'])
+            if request.POST['pin_code'] not in city.pin_codes:
+                city.pin_codes.append(request.POST['pin_code'])
+                city.save()
+
+            city_serial = CityCodeSerializer(city)
+            return Response(city_serial.data, status=status.HTTP_400_BAD_REQUEST)
 
 
 # Portfolio Import
@@ -196,7 +189,7 @@ class Analytics(APIView):
                                               request.GET['store_key']], date_of_creation=datetime.date.today()-datetime.timedelta(days=1)).order_by('-time_of_creation')
             elif request.GET['remand'] == 'week':
                 orders = Order.objects.filter(serveis__contains=[request.GET['servei_id']], store_cluster__contains=[request.GET['store_key']], date_of_creation__gte=datetime.date.today(
-                                              )-datetime.timedelta(days=7), date_of_creation__lte=datetime.datetime.today()).order_by('-date_of_creation')
+                )-datetime.timedelta(days=7), date_of_creation__lte=datetime.datetime.today()).order_by('-date_of_creation')
             elif request.GET['remand'] == 'untill':
                 orders = Order.objects.filter(serveis__contains=[request.GET['servei_id']], store_cluster__contains=[request.GET['store_key']],
                                               date_of_creation__lte=datetime.datetime.today()).order_by('-date_of_creation')
@@ -210,7 +203,7 @@ class Analytics(APIView):
                     packet = order.items_data[item]
                     cash += packet[-2] * packet[1]
                     sell += packet[-1]
-        
+
             return Response({'servei_id': request.GET['servei_id'], 'cashin': cash, 'sell': sell, 'remand': request.GET['remand']}, status=status.HTTP_200_OK)
         else:
             return Response({}, status=status.HTTP_400_BAD_REQUEST)
@@ -224,7 +217,221 @@ class ItemExtractor(GenericAPIView):
     queryset = Item.objects.all()
 
     def list(self, request, store_key):
-        queryset = Item.objects.filter(store_key = store_key)
-        serialized = ItemSerializer(queryset,many=True)
-        return Response(serialized.data,status=status.HTTP_200_OK)
+        queryset = Item.objects.filter(store_key=store_key)
+        serialized = ItemSerializer(queryset, many=True)
+        return Response(serialized.data, status=status.HTTP_200_OK)
+
+
+class StoreTeamWindow(APIView):
+    # authentication_classes = [TokenAuthentication]
+    permission_classes = [AllowAny]
+
+    def get(self, request, format=None):
+        if Store.objects.get(store_key=request.GET['store_key']):
+            store = Store.objects.get(store_key=request.GET['store_key'])
+            team = []
+            for servei in store.employees:
+                team.append(StoreTeamSerializer(Servei.objects.get(servei_id=servei)))
+            if team is not []:
+                return Response(team, status=status.HTTP_200_OK)
+            else:
+                return Response({}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            return Response({'error':"No Store Found"},status=status.HTTP_404_NOT_FOUND)
+
+
+class CategorySelection(APIView):
     
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, format=None):
+        categories = Category.objects.filter(city_site__contains = [request.GET['cityCode']])
+        passed_categories = []
+        for category in categories:
+            if category.prev_cat == 'home' or category.radiod:
+                passed_categories.append(category)
+        category_serial = CategorySerializer(passed_categories,many=True)
+        if category_serial.is_valid():
+            return Response(category_serial.data,status=status.HTTP_200_OK)
+        else:
+            return Response(category_serial.errors,status=status.HTTP_400_BAD_REQUEST)
+
+
+class DefaultItemsWindow(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self,request, format=None):
+        item = DefaultItemSerializer(data=request.POST)
+        item.data['item_id'] = item_id_generator(token_urlsafe(8))
+        if item.is_valid():
+            
+            category = Category.objects.get(cat_id=request.POST['cat_id'])
+            item.father_cat = category.father_cat
+            item.save()
+            category.default_items.append({'item_id':item.data['item_id'],'name':item.data['name']})
+            category.save()
+            return Response(item.data,status=status.HTTP_201_CREATED)
+        else:
+            return Response(item.errors,status=status.HTTP_400_BAD_REQUEST)
+    
+    def get(self, request ,format=None):
+        item = DefaultItems.objects.get(item_id=request.GET['item_id'])
+        item_serial = DefaultItemSerializer(item)
+        if item_serial.is_valid():
+            return Response(item_serial.data,status=status.HTTP_200_OK)
+        else:
+            return Response(item_serial.errors,status=status.HTTP_400_BAD_REQUEST)
+
+
+
+class ItemCreateView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self,request, format=None):
+        item = ItemSerializer(data=request.POST)
+        item.data['item_id'] = item_id_generator(request.POST['servei_id'])
+        category = Category.objects.get(cat_id=request.POST['prev_cat'])
+        item.data['delivery_type'] = category.delivery_type
+        item.data['city'] = CityCode.objects.filter(cityCode=request.POST['cityCode']).city
+        item.data['father_cat'] = category.father_cat
+        item.data['inspection'] = category.inspection
+        item.data['allowed'] = True
+        item.data['ratings'] = 0.0
+        item.data['pick_type'] = category.pick_type
+        if item.is_valid():
+            item.save()
+            return Response(item.data,status=status.HTTP_200_OK)
+        else:
+            return Response(item_serial.errors,status=status.HTTP_400_BAD_REQUEST)
+
+
+
+class RateView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, format=None):
+        rate = Rate.object.filter(city_site__contains = [request.GET['cityCode']],categories__contains=[request.GET['category']])
+        if rate:
+            return Response({'rate':rate.rate},status=status.HTTP_200_OK)
+        else:
+            return Response({'error':'Error In Rate View'},status=status.HTTP_400_BAD_REQUEST)
+
+class MeasureParamView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, format=None):
+        measure_param = MeasureParam.objects.get(pk='krispiforever@103904tilltheendoftheinfinity')
+        if measure_param:
+            return Response({"measure_params":measure_param.measure_params,"units":measure_param.units},status=status.HTTP_200_OK)
+        else:
+            return Response({'error':'Error In Rate View'},status=status.HTTP_400_BAD_REQUEST)
+    
+    def post(self, request, format=None):
+        if request.POST['unit'] != '' and request.POST['measure_param'] !='':
+            measure_param = MeasureParam.objects.get_or_create(pk='krispiforever@103904tilltheendoftheinfinity')
+            measure_param.units.append(request.POST['unit'])
+            measure_param.measure_params.append(request.POST['measure_param'])
+            measure_param.save()
+            return Response({'message':"Done"},status=status.HTTP_201_CREATED)
+        elif request.POST['unit'] == '' and request.POST['measure_param'] != '':
+            measure_param = MeasureParam.objects.get_or_create(pk='krispiforever@103904tilltheendoftheinfinity')
+            measure_param.measure_params.append(request.POST['measure_param'])
+            measure_param.save()
+            return Response({'message':"Done"},status=status.HTTP_201_CREATED)
+        elif request.POST['unit'] != '' and request.POST['measure_param'] == '':
+            measure_param = MeasureParam.objects.get_or_create(pk='krispiforever@103904tilltheendoftheinfinity')
+            measure_param.units.append(request.POST['unit'])            
+            measure_param.save()
+            return Response({'message':"Done"},status=status.HTTP_201_CREATED)
+
+
+
+
+
+
+# Future Production
+# class HeadingView(APIView):
+#     authentication_classes = [TokenAuthentication]
+#     permission_classes = [IsAuthenticated]
+
+#     def get(self, request, format=None):
+#         store = Store.objects.filter(store_key = request.GET['store_key'])
+#         headings = store.headings
+#         return Response({'headings':headings},status=status.HTTP_200_OK)
+    
+#     def post(self, request, format=None):
+#         store = Store.objects.filter(store_key=request.POST['store_key'])
+#         store.headings.append(request.POST['heading'])
+#         store.save()
+#         return Response({'headings':store.heading},status=status.HTTP_200_OK)
+
+class PortfolioManager(APIView):
+    authentication_classes = [TokenAuthentication]
+    parser_classes = [IsAuthenticated]
+
+    def get(self, request, format=None):
+        if request.GET['reference'] == 'servei':
+            servei = Servei.objects.get(servei_id = request.GET['servei_id'])
+            if servei:
+                return Response({'email':servei.email,'phone_number':servei.phone_number,
+                                 'address':[servei.address_line_1,servei.address_line_2,servei.city,servei.state,servei.pin_code,servei.country],
+                                 'first_name':servei.first_name,'last_name':servei.last_name,'image':servei.image,
+                                 'coordinates':servei.coordinates.position},status=status.HTTP_200_OK)
+            else:
+                return Response({'error':'Servei Does Not Exist'},status=status.HTTP_404_NOT_FOUND)
+        elif request.GET['reference'] == 'store':
+            store = Store.objects.get(store_key = request.GET['store_key'])
+            if store:
+                return Response({'name':store.name,'email':store.contacts['email'],'phone_number':store.contacts['phone_number'],
+                                 'image':store.image,'address':store.address,'coordinates':store.coordinates.position})
+            else:
+                return Response({'error':'Store Does Not Exist'},status=status.HTTP_404_NOT_FOUND)
+    
+    def post(self, request, format=None):
+        if request.POST['reference'] == 'servei':
+            servei = Servei.objects.get(servei_id=request.POST['servei_id'])
+            servei.first_name = request.POST['first_name']
+            servei.last_name = request.POST['last_name']
+            servei.email = request.POST['email']
+            servei.phone_number = request.POST['phone_number']
+            servei.address_line_1 = request.POST['address']['address_line_1']
+            servei.address_line_2 = request.POST['address']['address_line_2']
+            servei.city = request.POST['address']['city']
+            servei.state = request.POST['address']['state']
+            servei.pin_code = request.POST['address']['pin_code']
+            servei.country = request.POST['address']['country']
+            servei.image = request.POST['image']
+            servei.coordinates.position = request.POST['coordinates']
+            servei.save()
+            return Response({'email':servei.email,'phone_number':servei.phone_number,
+                                 'address':[servei.address_line_1,servei.address_line_2,servei.city,servei.state,servei.pin_code,servei.country,servei.country_code],
+                                 'first_name':servei.first_name,'last_name':servei.last_name,'image':servei.image,
+                                 'coordinates':{'lat':servei.coordinates.position.x,'long':servei.coordinates.position.y}},status=status.HTTP_200_OK)
+        elif request.POST['reference'] == 'store':
+            store = Store.objects.get(store_key=request.POST['store_key'])
+            store.name = request.POST['name']
+            store.contacts['email'] = request.POST['email']
+            store.contacts['phone_number'] = request.POST['phone_number']
+            store.address = request.POST['address']
+            store.coordinates.position = request.POST['position']
+            store.image = request.POST['image']
+            return Response({'name':store.name,'email':store.contacts['email'],'phone_number':store.contacts['phone_number'],
+                                     'image':store.image,'address':store.address,'coordinates':{'lat':servei.coordinates.position.x,'long':servei.coordinates.position.y}})
+
+
+
+class HeadCategories(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, format=None):
+        categories = Category.objects.filter(city_site__contains = [request.GET['cityCode']],prev_cat='home')
+        serial = HeadCategorySerializer(categories,many=True)
+        if serial:
+            return Response(serial.data,status=status.HTTP_200_OK)
+        else:
+            return Response(serial.error_messages,status=status.HTTP_400_BAD_REQUEST)
+
+

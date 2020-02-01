@@ -20,10 +20,7 @@ class ItemSerializer(serializers.ModelSerializer):
         model = Item
         fields = '__all__'
 
-class OtpLogSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = OTPLog
-        fields = '__all__'
+
     
 class CityCodeSerializer(serializers.ModelSerializer):
 
@@ -47,10 +44,36 @@ class CoordinatesSerializer(serializers.ModelSerializer):
         model = Coordinates
         fields = '__all__'
 
-# class FetchedItemSerializer(serializers.ModelSerializer):
-#     """
-#       sends item_id,name,allowed,price,measure,ratings
-#     """
-#     class Meta:
-#         model = Item
-#         fields = ('item_id','name','allowed','price','measure','ratings')
+class FetchedItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Item
+        fields = ('item_id', 'name', 'allowed', 'price', 'measure', 'ratings')
+
+class StoreTeamSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Servei
+        fields = ('first_name','last_name','phone_number','servei_id')
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = '__all__'
+
+class DefaultItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        models = DefaultItems
+        fields = '__all__'
+
+class DefaultItemsSelection(serializers.ModelSerializer):
+
+    class Meta:
+        model = DefaultItems
+        fields = ('item_id', 'name')
+
+class HeadCategorySerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Category
+        fields = ('name','cat_id','image')
+
