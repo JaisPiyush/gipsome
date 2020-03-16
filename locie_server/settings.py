@@ -46,6 +46,16 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'locie.apps.LocieConfig',
     'fcm_django',
+    'django_jenkins',
+]
+
+PROJECT_APPS = [
+    'locie.apps.LocieConfig',
+]
+
+JENKINS_TASKS = [
+    'django_jenkins.tasks.run_pep8',
+    'django_jenkins.tasks.run_pyflakes',
 ]
 
 #AUTH USER MODEL

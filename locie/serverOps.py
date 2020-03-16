@@ -3,6 +3,7 @@ from datetime import datetime
 from secrets import token_urlsafe 
 
 
+
 def servei_id_creatore(cityCode, aadhar, phone_number):
     # city@aadhar[3:9]SERphone_number[6:]
     delimator = []
@@ -123,32 +124,3 @@ def quickSort_pilot(arr,low,high):
         quickSort_pilot(arr, pi+1, high) 
 
 
-# This time we need to sort on the basis of distance between
-# def partition_pilot(arr,low,high): 
-#     i =  low-1         # index of smaller element 
-#     pivot = int(arr[high].weight)     # pivot 
-  
-#     for j in range(low , high): 
-  
-#         # If current element is smaller than the pivot 
-#         if   int(arr[j].weight) < pivot: 
-          
-#             # increment index of smaller element 
-#             i = i+1 
-#             arr[i],arr[j] = arr[j],arr[i] 
-  
-#     arr[i+1],arr[high] = arr[high],arr[i+1] 
-#     return  i+1 
-  
- 
-# def quickSort_pilot(arr,low,high): 
-#     if low < high: 
-  
-#         # pi is partitioning index, arr[p] is now 
-#         # at right place 
-#         pi = partition_pilot(arr,low,high) 
-  
-#         # Separately sort elements before 
-#         # partition and after partition 
-#         quickSort_pilot(arr, low, pi-1) 
-#         quickSort_pilot(arr, pi+1, high) 

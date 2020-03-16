@@ -9,7 +9,23 @@ from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.geos import fromstr
 from django.contrib.gis.measure import D
 from .serializers import PilotSerializer,CoordinatesSerializer
-from .rpmns import RPMNSystem
+from random import randint
+
+
+class OtpPulse:
+    
+    def __init__(self):
+       
+        self.data = self.random_with_n_digits(7)
+
+    def __str__(self):
+        return repr(self.data)
+
+    def random_with_n_digits(self, n):
+        range_start = 10**(n-1)
+        range_end = (10**n)-1
+        return randint(range_start, range_end)
+
 
 
 
@@ -107,6 +123,7 @@ class PilotManager:
             self.order.position = final_pilot.coordinates.position
             self.order.save()
         else:
+            self.order.otp = str(OtpPulse())
             self.order.pilot_id_return = final_pilot.pilot_id
             self.order.pilot_name = final_pilot.first_name + final_pilot.last_name
             self.order.pilot_image = final_pilot.image

@@ -1,7 +1,7 @@
 from enum import Enum
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from .models import Order, Account, Servei, Item, Customer, Pilot, Store
+from .models import Order, Account, Servei, Item, Customer, Pilot, Store,MobileDevice,CustomerDevice,Coordinates
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.authentication import TokenAuthentication
@@ -10,11 +10,23 @@ from .serializers import OrderSerialzer
 from rest_framework import status
 from datetime import datetime, timezone
 from .serverOps import dtime_diff
-from .rpmns import RPMNSystem
 from django.contrib.gis.geos.point import Point
 from .pilot import PilotManager
 from random import randint
+from .rpmns import API_KEY
 import time
+
+
+
+def position(coordinates_id):
+    return Coordinates.objects.get(coordinates_id = coordinates_id).position
+
+def set_positon(coord_id,data:dict):
+    coord = Coordinates.objects.get(coordinates_id = coord_id)
+    coord.position = Point(float(data['lat']),float(data['long']))
+    coord.save()
+
+
 
 
 class OtpPulse:
@@ -26,19 +38,19 @@ class OtpPulse:
     def __str__(self):
         return repr(self.data)
 
-    def random_with_n_digits(self, n):
+    def random_with_n_digits(self, n:int):
         range_start = 10**(n-1)
         range_end = (10**n)-1
         return randint(range_start, range_end)
 
 
-def order_id_generator(data):
+def order_id_generator(data:dict):
     # UP53$8499ODRTIME
     customer = list(map(str, Customer.objects.filter(
         account_id=data['customer_id'])))
     customer = customer[6] + customer[7] + customer[8] + customer[9]
     time = datetime.now(timezone.utc).strftime('%d%m%y|%H%M%S')
-    return 'UP53${c}ODR{t}'.format(c=customer, t=time)
+    return 'UP53@{c}ODR{t}'.format(c=customer, t=time)
 
 
 class Vectus(Enum):
@@ -131,7 +143,7 @@ class CustomerOrderInterface(APIView):
 
     def post(self, request, format=None):
         data = request.POST
-        if data['action'] == Nectus.ORDER_CREATE:
+        if int(data['action']) == Nectus.ORDER_CREATE:
             order = Order.objects.create(
                 order_id=order_id_generator(data['customer_id']))
             order.status = Vectus.START
@@ -162,6 +174,7 @@ class CustomerOrderInterface(APIView):
                     clumps['status'] = Vectus.START
                     clumps['effective_price'] = cluster['effective_price']
                     order.servei_cluster[cluster['servei_id']] = clumps
+                    order.servei_list.append(clister['servei_id'])
 
                 if not order.items_cluster[cluster['item_id']]:
                     clumps = {}
@@ -178,7 +191,7 @@ class CustomerOrderInterface(APIView):
                 order.save()
                 TDMOSystem(order).ignite()
                 return Response({'order_id': order.order_id, 'status': order.status}, status=status.HTTP_201_CREATED)
-        elif data['action'] == Nectus.ORDER_CANCEL:
+        elif int(data['action']) == Nectus.ORDER_CANCEL:
             order = Order.objects.get(order_id=data['order_id'])
             # order.status = Vectus.MISSION_FAILED
             order.save()
@@ -193,16 +206,16 @@ class OrderServeiInterface(APIView):
     def post(self, request, format=None):
         # Action Accept the order, decline the order, mark complete
         data = request.POST
-        if data['action'] == Nectus.ORDER_SOLDIER_DECLINE:
+        if int(data['action']) == Nectus.ORDER_SOLDIER_DECLINE:
             # Decline all
             order = Order.objects.get(order_id=data['order_id'])
             order.servei_cluster[data['servei_id']
                                  ]['status'] = Vectus.SOLDIER_DECLINED
             order.save()
             TDMOSystem(order.order_id).kill()
-            return Response({'order_id': order.order_id, 'status': order.status}, status=status.HTTP_200_OK)
+            return Response({'order_id': order.order_id, 'status': order.status,'servei_status':Vectus.SOLDIER_DECLINED}, status=status.HTTP_200_OK)
         
-        elif data['action'] == Nectus.ORDER_SOLDIER_ACCEPT:
+        elif int(data['action']) == Nectus.ORDER_SOLDIER_ACCEPT:
             # Servei wil send packets like {order_id,items} --> items will contain items accepted
             order = Order.objects.get(order_id=data['order_id'])
             order.servei_cluster[data['servei_id']
@@ -224,9 +237,9 @@ class OrderServeiInterface(APIView):
             order.save()
             # Starting TDMOS
             TDMOSystem(order.order_id).ignite()
-            return Response({'order_id': order.order_id, 'status': order.status, 'clusters': servei_items, 'quantity': total_quantity, 'effective_price': servei_effective_price, 'otp': order.otp})
+            return Response({'order_id': order.order_id, 'status': Vectus.MISSION_PROCESSING, 'servei_status':Vectus.SOLDIER_ACCEPTED,'cluster': servei_items, 'quantity': total_quantity, 'effective_price': servei_effective_price, 'otp': order.otp},status=status.HTTP_200_OK)
 
-        elif data['action'] == Nectus.ORDER_COMPLETE:
+        elif int(data['action']) == Nectus.ORDER_COMPLETE:
             # FOR UDS //SDU IN FUTURE
             # WILL FIRE UDS_SERVICE IF ALL SERVEI COMPLETED
             # WILL ADD SDU IN FUTURE
@@ -237,7 +250,9 @@ class OrderServeiInterface(APIView):
             if all([servei['status'] == Vectus.SOLDIER_COMPLETED for servei in order.final_servei_cluster.values()]) and order.order_type == 'UDS':
                 # Second Round Starts Here
                 TDMOSystem(order.order_id).uds_service()
-            return Response({'order_id': order.order_id, 'status': order.status, 'otp': order.orp}, status=status.HTTP_200_OK)
+            return Response({'order_id': order.order_id, 'servei_status': Vectus.SOLDIER_COMPLETED, 'otp': order.otp,'status':order.status}, status=status.HTTP_200_OK)
+        
+        
 
 
 
@@ -250,7 +265,7 @@ class OrderPilotInterface(APIView):
     def post(self, requeset, format=None):
         data = requeset.POST
         # action item_picked, item_dropped
-        if data['action'] == Vectus.PILOT_START_LOADING:
+        if int(data['action']) == Vectus.PILOT_START_LOADING:
             
             order = Order.objects.get(order_id=data['order_id'])
            
@@ -277,13 +292,18 @@ class OrderPilotInterface(APIView):
         
 
         # Pilot Dropped Subjects to Serveis
-        if data['action'] == Vectus.PILOT_DROPED_AMMO:
+        elif int(data['action']) == Vectus.PILOT_DROPED_AMMO:
             order = Order.objects.get(order_id=data['order_id'])
             for item_id in order.final_items.keys():
                 order.final_items[item_id]['status'] = Vectus.AMMO_PACKED
             order.save()
             if all([item['status'] ==  Vectus.AMMO_PACKED for item in order.final_items.values() ]):
-                RPMNSystem(order.customer_id,'009').telegram(title='Your Order is in Service',body='Orders have reached their destination, they will see you soon :)',data={'type':'order-update','order_id':order.order_id,'status':order.status})
+                device = CustomerDevice.objects.get(customer_id = order.customer_id)
+
+                device.send_message('Your Order is in Service','You Orders have reached their destinations',
+                data= {'click_action':'FLUTTER_NOTIFICATION_CLICK','data':{'type':'order-update','order_id':order.order_id,
+                'status':order.status}},api_key=API_KEY)
+                # RPMNSystem(order.customer_id,'009').telegram(title='Your Order is in Service',body='Orders have reached their destination, they will see you soon :)',data={'type':'order-update','order_id':order.order_id,'status':order.status})
                 return Response({'order_id':order.order_id,'status':Vectus.MISSION_SUCCESSFUL},status=status.HTTP_200_OK)
             return Response({'order_id':order.order_id,'status':order.status},status=status.HTTP_200_OK)
 
@@ -294,17 +314,28 @@ class OrderPilotInterface(APIView):
 
 
         # Finally dropped Order to Customer
-        if data['action'] == Vectus.PILOT_DROPED_AMMO_VICTIM:
+        elif int(data['action']) == Vectus.PILOT_DROPED_AMMO_VICTIM:
             order = Order.objects.get(order_id=data['order_id'])
             
             if order.order_type == 'UDS':
                 order.status = Vectus.MISSION_SUCCESSFUL
-                RPMNSystem(order.customer_id,'009').telegram(title='Order Completed',body='Your Order has been delivered',data={'type':'order-complete','order_id':order.order_id})
+                device = CustomerDevice.objects.get(customer_id=order.customer_id)
+
+                device.send_message('Order Completed','Your Order has been delivered',
+                                    data={'click_action':'FLUTTER_NOTIFICATION_CLICK',
+                                    'data':{'type':'order-complete','order_id':order.order_id}},api_key=API_KEY)
+                
+                # RPMNSystem(order.customer_id,'009').telegram(title='Order Completed',body='Your Order has been delivered',data={'type':'order-complete','order_id':order.order_id})
                 order.save()
                 
             elif order.order_type == 'SSU':
                 order.status = Vectus.MISSION_SUCCESSFUL
-                RPMNSystem(order.customer_id,'009').telegram(title='Order Completed',body='Your Order has been delivered',data={'type':'order-complete','order_id':order.order_id})
+                device = CustomerDevice.objects.get(customer_id=order.customer_id)
+
+                device.send_message('Order Completed','Your Order has been Delivered',data={'click_action':'FLUTTER_NOTIFICATION_CLICK',
+                                    'data':{'type':'order-complete','order_id':order.order_id}},api_key=API_KEY)
+
+                # RPMNSystem(order.customer_id,'009').telegram(title='Order Completed',body='Your Order has been delivered',data={'type':'order-complete','order_id':order.order_id})
                 order.save()
             return Response({'order_id':order.order_id,'status':Vectus.MISSION_SUCCESSFUL},status=status.HTTP_200_OK)
             
@@ -314,7 +345,7 @@ class OrderPilotInterface(APIView):
 
 class TDMOSystem:
 
-    def __init__(self, order_id):
+    def __init__(self, order_id:str):
         self.order_id = order_id
         self.order = Order.objects.get(order_id=self.order_id)
 
@@ -331,8 +362,13 @@ class TDMOSystem:
                 # Setting all item_id into cluster
                 servei_item_cluster.append(order.items_cluster[item_id])
             # Notifying Servei
-            RPMNSystem(servei, '002').telegram(title='New Order', body='New Order has arrived for you', data={
-                'type': 'new-order', 'order_id': order.order_id, 'cluster': servei_item_cluster, 'total_quantity': total_quantity, 'effective_price': servei_effective_price,'status':self.order.status})
+            device = MobileDevice.objects.get(locie_partner = servei)
+            device.send_message('New Order','New Order has arrived for you',data = {'click_action': 'FLUTTER_NOTIFICATION_CLICK',
+                                'data':{'type': 'new-order', 'order_id': order.order_id, 'cluster': servei_item_cluster,
+                                 'total_quantity': total_quantity, 'effective_price': servei_effective_price,
+                                 'status':self.order.status,'order_type':self.order.order_type}},api_key=API_KEY)
+            # RPMNSystem(servei, '002').telegram(title='New Order', body='New Order has arrived for you', data={
+            #     'type': 'new-order', 'order_id': order.order_id, 'cluster': servei_item_cluster, 'total_quantity': total_quantity, 'effective_price': servei_effective_price,'status':self.order.status,'order_type':self.order.order_type})
 
         # Take pause for 3 minutes --> 180 seconds
         time.sleep(180)
@@ -352,9 +388,15 @@ class TDMOSystem:
                         effective_price += final_items[item_id]['effective_price']
                         price += final_items[item_id]['price']
 
-        self.order.update(final_items=final_items, final_servei_cluster=final_servei_cluster,
-                          status=Vectus.MISSION_PROCESSING, effective_price=effective_price,price=price)
+        # self.order.update(final_items=final_items, final_servei_cluster=final_servei_cluster,
+        #                   status=Vectus.MISSION_PROCESSING, effective_price=effective_price,price=price)
+        self.order.final_items = final_items
+        self.order.final_servei_cluster = final_servei_cluster
+        self.order.status = Vectus.MISSION_PROCESSING
+        self.order.effective_price = effective_price
+        self.order.price = price
         self.order.save()
+        # self.order.save()
         if self.order.order_type == 'SSU':
             self.ssu_service()
         elif self.order.order_type == 'UDS':
@@ -367,10 +409,25 @@ class TDMOSystem:
             self.order.status = Vectus.MISSION_FAILED
             self.order.save()
             for servei in self.order.servei_cluster.keys():
-                RPMNSystem(servei, '002').telegram(title='Order has been Cancelled', body=f'{self.order.order_id} is Cancelled', data={
-                    'type': 'order_update', 'order_id': self.order.order_id, 'status': self.order.status})
-            RPMNSystem(self.order.customer_id, '009').telegram(title='Order has been Cancelled', body='Your Order is Cancelled', data={
-                'type': 'order_update', 'order_id': self.order.order_id, 'status': self.order.status})
+
+                device = MobileDevice.objects.get(locie_partner = servei)
+
+                device.send_message('Order Cancelled',f'Order has been Cancelled!. Order ID:{self.order.order_id}',
+                                    data = {'click_action': 'FLUTTER_NOTIFICATION_CLICK','data':{
+                    'type': 'order_cancel', 'order_id': self.order.order_id, 'status': self.order.status}},api_key=API_KEY)
+
+                # RPMNSystem(servei, '002').telegram(title='Order has been Cancelled', body=f'{self.order.order_id} is Cancelled', data={
+                #     'type': 'order_update', 'order_id': self.order.order_id, 'status': self.order.status})
+            
+            device = CustomerDevice.objects.get(customer_id = self.order.customer_id)
+            
+            device.send_message('Order Cancelled',f'Your Order with Order Id - {self.order.order_id} has been Cancelled',
+                                data= {'click_action': 'FLUTTER_NOTIFICATION_CLICK','data':{
+                'type': 'order_update', 'order_id': self.order.order_id, 'status': self.order.status}},api_key = API_KEY)
+            
+            # RPMNSystem(self.order.customer_id, '009').telegram(title='Order has been Cancelled', body='Your Order is Cancelled', data={
+            #     'type': 'order_update', 'order_id': self.order.order_id, 'status': self.order.status})
+        
         # TODO: Cancellation On its way
 
     def ssu_service(self):
@@ -387,27 +444,49 @@ class TDMOSystem:
         address = {}
         for servei in self.order.final_servei_cluster.keys():
             store = Store.objects.get(store_key=self.order.final_servei_cluster[servei]['store_key'])
-            coordinates[servei] = {'lat':store.coordinates.position.x,'long':store.coordinates.position.y}
+            coordinates[servei] = {'lat':position(store.coordinates_id)[0],'long':position(store.coordinates_id)[1]}
             address[servei] = store.address 
             serial = self.order.final_servei_cluster[servei]
             serial['servei_id'] = servei
             serial['items'] = [self.order.final_items[item_id] for item_id in serial['items'] ]
             cluster.append(serial)
-            RPMNSystem(servei,'002').telegram(title='Order Update',body='New Update on an Order',data={'type':'order-update','order_id':self.order.order_id,'otp':self.order.otp,
-                                                                                                        'pilot_id':self.order.pilot_id_first,'pilot_name':self.order.pilot_name,'status':self.order.status})
+            device = MobileDevice.objects.get(locie_partner = servei)
+
+            device.send_message('Order Update','New Update on Order',data = {
+                'click_action': 'FLUTTER_NOTIFICATION_CLICK','data':{'type':'order-update','action':'pilot_attach',
+                'order_id':self.order.order_id,'otp':self.order.otp,'pilot_id':self.order.pilot_id_first,
+                'pilot_name':self.order.pilot_name,'status':self.order.status}},api_key=API_KEY)
+
+            # RPMNSystem(servei,'002').telegram(title='Order Update',body='New Update on an Order',data={'type':'order-update','order_id':self.order.order_id,'otp':self.order.otp,
+            #                                                                                             'pilot_id':self.order.pilot_id_first,'pilot_name':self.order.pilot_name,'status':self.order.status})
 
 
-        coordinates['customer'] = {'lat':self.order.customer_coords.x,'long':self.order.customer_coords.y}
+        coordinates['customer'] = {'lat':self.order.customer_coords[0],'long':self.order.customer_coords[1]}
         address['customer'] = self.order.customer_address
-        RPMNSystem(self.order.pilot_id_first, '003').telegram(title='New Order',
-                                                         body='New Order has Arrived for You', data={'type': 'new-order','order_id':self.order.order_id,'order_type':'SSU',
-                                                         'cluster':cluster,'price':self.order.price,'otp':self.order.otp,'effective_price':self.order.effective_price,
-                                                         'coordinates':coordinates,'address':address,'customer_name':self.order.customer_name})
+
+        device  = MobileDevice.objects.get(locie_partner = self.order.pilot_id_first)
+
+        device.send_message('New Order','New Order has Arrived for You',data={'click_action': 'FLUTTER_NOTIFICATION_CLICK',
+                            'data':{'type': 'new-order','order_id':self.order.order_id,'order_type':'SSU',
+                            'cluster':cluster,'price':self.order.price,'otp':self.order.otp,'effective_price':self.order.effective_price,
+                            'coordinates':coordinates,'address':address,'customer_name':self.order.customer_name}},api_key=API_KEY)
+
+        # RPMNSystem(self.order.pilot_id_first, '003').telegram(title='New Order',
+        #                                                  body='New Order has Arrived for You', data={'type': 'new-order','order_id':self.order.order_id,'order_type':'SSU',
+        #                                                  'cluster':cluster,'price':self.order.price,'otp':self.order.otp,'effective_price':self.order.effective_price,
+        #                                                  'coordinates':coordinates,'address':address,'customer_name':self.order.customer_name})
         
         #TODO: Order Implementation on Customer
-        RPMNSystem(self.order.customer_id,'009').telegram(title='Your Order has found it\'s Pilot',body=f'{self.order.pilot_name} is your order\'s pilot',icon=self.order.pilot_image,data={'type':'order-update','order_id':self.order_id,'status':self.order.status,'pilot_name':self.order.pilot_id_first,'pilot_name':self.order.pilot_name,'pilot_image':self.order.pilot_image})
+        device = CustomerDevice.objects.get(customer_id = self.order.customer_id)
+
+        device.send_message('Pilot Assigned',f"Your Order's Pilot is {self.order.pilot_name}",data={
+            'click_action': 'FLUTTER_NOTIFICATION_CLICK','data': {'type':'order-update','order_id':self.order_id,'status':self.order.status,
+            'pilot_name':self.order.pilot_id_first,'pilot_name':self.order.pilot_name,'pilot_image':self.order.pilot_image}},api_key=API_KEY)
+
+        # RPMNSystem(self.order.customer_id,'009').telegram(title='Your Order has found it\'s Pilot',body=f'{self.order.pilot_name} is your order\'s pilot',icon=self.order.pilot_image,data={'type':'order-update','order_id':self.order_id,'status':self.order.status,'pilot_name':self.order.pilot_id_first,'pilot_name':self.order.pilot_name,'pilot_image':self.order.pilot_image})
         
     def uds_service(self):
+        ############################################### Look Required
         # First and then return
         if self.order.status == Vectus.MISSION_PROCESSING: 
             # First
@@ -415,33 +494,56 @@ class TDMOSystem:
             PilotManager(self.order_id).pilot_compass()
         elif self.order.status == Vectus.PILOT_FINISHED_LOADING:
             PilotManager(self.order_id).pilot_compass(first=False)
+
         cluster = []
         coordinates = {}
         address = {}
         for servei in self.order.final_servei_cluster.keys():
             store = Store.objects.get(store_key=self.order.final_servei_cluster[servei]['store_key'])
-            coordinates[servei] = {'lat':store.coordinates.position.x,'long':store.coordinates.position.y}
+            coordinates[servei] = {'lat':position(store.coordinates_id)[0],'long':position(store.coordinates_id)[1]}
             address[servei] = store.address 
             serial = self.order.final_servei_cluster[servei]
             serial['servei_id'] = servei
             serial['items'] = [self.order.final_items[item_id] for item_id in serial['items'] ]
             cluster.append(serial)
-            RPMNSystem(servei,'002').telegram(title='Order Update',body='New Update on an Order',data={'type':'order-update','order_id':self.order.order_id,'otp':self.order.otp,
-                                                                                                        'pilot_id':self.order.pilot_id_first,'pilot_name':self.order.pilot_name,'status':self.order.status})
-        coordinates['customer'] = {'lat':self.order.customer_coords.x,'long':self.order.customer_coords.y}
+
+            device = MobileDevice.objects.get(locie_partner = servei)
+
+            device.send_message('Order Update','New Update on an Order',data={'click_action': 'FLUTTER_NOTIFICATION_CLICK',
+              'data':{'type':'order-update','action':'pilot_attach','order_id':self.order.order_id,'otp':self.order.otp,
+                      'pilot_id':self.order.pilot_id_first,'pilot_name':self.order.pilot_name,'status':self.order.status}},api_key=API_KEY)
+
+            # RPMNSystem(servei,'002').telegram(title='Order Update',body='New Update on an Order',data={'type':'order-update','order_id':self.order.order_id,'otp':self.order.otp,
+            #                                                                                             'pilot_id':self.order.pilot_id_first,'pilot_name':self.order.pilot_name,'status':self.order.status})
+
+        coordinates['customer'] = {'lat':self.order.customer_coords[0],'long':self.order.customer_coords[1]}
         address['customer'] = self.order.customer_address
         
+        ########################################################
         if self.order.status == Vectus.MISSION_PROCESSING:
-            RPMNSystem(self.order.pilot_id_first, '003').telegram(title='New Order',
-                                                         body='New Order has Arrived for You', data={'type': 'new-order','order_id':self.order.order_id,'order_type':'UDS',
-                                                         'cluster':cluster,'otp':self.order.otp,
-                                                         'coordinates':coordinates,'address':address,'customer_name':self.order.customer_name})
+            device = MobileDevice.objects.get(locie_partner = self.order.pilot_id_first)
+
+            device.send_message('New Order','New Order has Arrived for You',data={'click_action': 'FLUTTER_NOTIFICATION_CLICK',
+            'data':{'type': 'new-order','order_id':self.order.order_id,'order_type':'UDS',
+                    'cluster':cluster,'otp':self.order.otp,'coordinates':coordinates,'address':address,
+                    'customer_name':self.order.customer_name}},api_key=API_KEY)
+
+            # RPMNSystem(self.order.pilot_id_first, '003').telegram(title='New Order',
+            #                                              body='New Order has Arrived for You', data={'type': 'new-order','order_id':self.order.order_id,'order_type':'UDS',
+            #                                              'cluster':cluster,'otp':self.order.otp,
+            #                                              'coordinates':coordinates,'address':address,'customer_name':self.order.customer_name})
 
         elif self.order.status == Vectus.PILOT_FINISHED_LOADING:
-            RPMNSystem(self.order.pilot_id_first, '003').telegram(title='New Order',
-                                                         body='New Order has Arrived for You', data={'type': 'new-order','order_id':self.order.order_id,'order_type':'UDS',
-                                                         'cluster':cluster,'price':self.order.price,'otp':self.order.otp,'effective_price':self.order.effective_price,
-                                                         'coordinates':coordinates,'address':address,'customer_name':self.order.customer_name})
+            device = MobileDevice.objects.get(locie_partner = self.order.pilot_id_return)
+            device.send_message('New Order','New Order has Arrived for You',data={'click_action': 'FLUTTER_NOTIFICATION_CLICK',
+             'data':{'type': 'new-order','order_id':self.order.order_id,'order_type':'UDS','cluster':cluster,'price':self.order.price,
+             'otp':self.order.otp,'effective_price':self.order.effective_price,'coordinates':coordinates,'address':address,
+             'customer_name':self.order.customer_name}},api_key=API_KEY)
+
+            # RPMNSystem(self.order.pilot_id_first, '003').telegram(title='New Order',
+            #                                              body='New Order has Arrived for You', data={'type': 'new-order','order_id':self.order.order_id,'order_type':'UDS',
+            #                                              'cluster':cluster,'price':self.order.price,'otp':self.order.otp,'effective_price':self.order.effective_price,
+            #                                              'coordinates':coordinates,'address':address,'customer_name':self.order.customer_name})
 
 
 

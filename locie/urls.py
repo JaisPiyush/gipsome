@@ -1,20 +1,34 @@
 from django.urls import path, include
 from .views import *
 from .rpmns import *
+from .tdmos import *
 urlpatterns = [
+    #Check Connetcion
+    path('checkConn/',CheckConnection.as_view()),
     #account creation
     path('accountcreate/suit/', AccountAddmission.as_view()),
-    #otpMectus
-    path('otpMectus/exposure/',OtpCreator.as_view()),
-    #all accounts
-    #path('all/accounts/',AccountBase.as_view()),
+
+    # Servei Login
+    path('accountlogin/servei',ServeiLogin.as_view()),
+
+    #Servei LogOut
+    path('accountlogout/servei',ServeiLogOut.as_view()),
+
+    # Servei Password Reset
+    path('accountPassworReset/servei/',ServeiPasswordReset.as_view()),
+
+    #Servei Order History
+    path('orderHistory/servei/',ServeiOrderHistory.as_view()),
+
+    #Item Alter
+    path('serveiAlterItem/',ItemAlterView.as_view()),
     # one account
     path('account/',CustomerLogin.as_view()),
     path('cityCode/',CityCodeCreate.as_view()),
     #Analytics
     path('analytics/',Analytics.as_view()),
     # Items Extractor
-    path('items-extractor/<str:store_key>',ItemExtractor.as_view()),
+    path('items-extractor/',ItemExtractor.as_view()),
     #Store Team
     path('store-team/',StoreTeamWindow.as_view()),
     #CategorySelection
@@ -33,6 +47,21 @@ urlpatterns = [
     path('new-store/',CreateStoreView.as_view()),
     #Head Categories
     path('head-categories/',HeadCategories.as_view()),
+    # registration_id  update
+    path('fcm_key_update/',RPMNSRegistartionUpdate.as_view()),
+    # OrderServeiInterface
+    path('order-interface-servei/',OrderServeiInterface.as_view()),
+    # Availablity
+    path('available/',ServeiAvailablity.as_view()),
+
+    #CheckUnmae
+    path('checkuname/',CheckUname.as_view()),
+
+    #CheckSite
+    path('checkSite/',CheckSite.as_view()),
+
+    #WebView
+    path('webView/',WebView.as_view()),
    
    
 

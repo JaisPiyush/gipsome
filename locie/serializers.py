@@ -77,3 +77,4 @@ class HeadCategorySerializer(serializers.ModelSerializer):
         model = Category
         fields = ('name','cat_id','image')
 
+
