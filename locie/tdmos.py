@@ -17,7 +17,7 @@ from .rpmns import API_KEY
 import time
 from time import sleep
 import json
-# from .tasks import shared_task
+from .tasks import shared_task
 
 
 
@@ -31,30 +31,30 @@ def set_positon(coord_id,data:dict):
 
 
 # Celery Async task to wait for 180s
-# @shared_task
-# def wait(order_id,time=180):
-#     sleep(time)
-#     print('Started Reactore')
-#     TDMOSystem(order_id).reactor()
+@shared_task
+def wait(order_id,time=180):
+    sleep(time)
+    print('Started Reactore')
+    TDMOSystem(order_id).reactor()
 
 # Celery Task to start ignition
-# @shared_task
-# def trigger(order_id):
-#     TDMOSystem(order_id).ignite()
+@shared_task
+def trigger(order_id):
+    TDMOSystem(order_id).ignite()
 
-# # Celery task to finish order
-# @shared_task
-# def kill_order(order_id):
-#     print('Started Killing')
-#     TDMOSystem(order_id).kill()
+# Celery task to finish order
+@shared_task
+def kill_order(order_id):
+    print('Started Killing')
+    TDMOSystem(order_id).kill()
 
-# @shared_task
-# def ssu_start(order_id):
-#     TDMOSystem(order_id).ssu_service()
+@shared_task
+def ssu_start(order_id):
+    TDMOSystem(order_id).ssu_service()
 
-# @shared_task
-# def uds_start(order_id):
-#     TDMOSystem(order_id).uds_service()
+@shared_task
+def uds_start(order_id):
+    TDMOSystem(order_id).uds_service()
 
 
 class OtpPulse:
@@ -226,14 +226,14 @@ class CustomerOrderInterface(APIView):
 
             order.save()
             #TODO: Clear Cart Database with cart_id
-            # trigger.delay(order.order_id)
+            trigger.delay(order.order_id)
             
             return Response({'order_id': order.order_id, 'status': order.status}, status=status.HTTP_201_CREATED)
         elif int(data['action']) == ORDER_CANCEL:
             order = Order.objects.get(order_id=data['order_id'])
             order.status = MISSION_FAILED
             order.save()
-            # kill_order.delay(order.order_id)
+            kill_order.delay(order.order_id)
             # TDMOSystem(order.order_id).kill()
             return Response({'order_id': order.order_id, 'status': order.status}, status=status.HTTP_200_OK)
         else:
@@ -256,7 +256,7 @@ class OrderServeiInterface(APIView):
             order.servei_cluster[data['servei_id']
                                  ]['status'] = SOLDIER_DECLINED
             order.save()
-            # kill_order.delay(order.order_id)
+            kill_order.delay(order.order_id)
             return Response({'order_id': order.order_id, 'status': order.status,'servei_status':SOLDIER_DECLINED}, status=status.HTTP_200_OK)
         
         elif int(data['action']) == ORDER_SOLDIER_ACCEPT:
@@ -280,7 +280,7 @@ class OrderServeiInterface(APIView):
                 order.otp = str(OtpPulse())
             order.save()
             # Starting TDMOS
-            # trigger.delay(order.order_id)
+            trigger.delay(order.order_id)
             # TDMOSystem(order.order_id).ignite()
             return Response({'order_id': order.order_id, 'status': MISSION_PROCESSING, 'servei_status':SOLDIER_ACCEPTED,'cluster': servei_items, 'quantity': total_quantity, 'effective_price': servei_effective_price, 'otp': order.otp},status=status.HTTP_200_OK)
 
@@ -294,7 +294,7 @@ class OrderServeiInterface(APIView):
             order.save()
             if all([servei['status'] == SOLDIER_COMPLETED for servei in order.final_servei_cluster.values()]) and order.delivery_type == 'UDS':
                 # Second Round Starts Here
-                # uds_start.delay(order.order_id)
+                uds_start.delay(order.order_id)
                 ...
                 # TDMOSystem(order.order_id).uds_service()
             return Response({'order_id': order.order_id, 'servei_status': SOLDIER_COMPLETED, 'otp': order.otp,'status':order.status}, status=status.HTTP_200_OK)
@@ -450,7 +450,7 @@ class TDMOSystem:
                 self.order.servei_cluster[servei]['status'] = SOLDIER_DECLINED
             self.order.status = MISSION_FAILED
             self.order.save()
-            # kill_order.delay(self.order_id)
+            kill_order.delay(self.order_id)
         else:
             self.order.final_items = final_items
             self.order.final_servei_cluster = final_servei_cluster
@@ -460,13 +460,13 @@ class TDMOSystem:
             self.order.save()
             # self.order.save()
             if self.order.delivery_type == 'SSU':
-                # ssu_start.delay(self.order_id)
+                ssu_start.delay(self.order_id)
                 pass
                 # self.ssu_service()
             elif self.order.delivery_type == 'UDS':
                 # First Round Starts Here
                 pass
-                # uds_start.delay(self.order_id)
+                uds_start.delay(self.order_id)
                 # self.uds_service()
 
     def kill(self):
