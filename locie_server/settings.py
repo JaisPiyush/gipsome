@@ -47,7 +47,6 @@ INSTALLED_APPS = [
     'locie.apps.LocieConfig',
     'fcm_django',
     'corsheaders',
-    'django_jenkins',
     'django_hosts',
 ]
 
@@ -55,10 +54,7 @@ PROJECT_APPS = [
     'locie.apps.LocieConfig',
 ]
 
-JENKINS_TASKS = [
-    'django_jenkins.tasks.run_pep8',
-    'django_jenkins.tasks.run_pyflakes',
-]
+
 
 #AUTH USER MODEL
 AUTH_USER_MODEL = 'locie.Account'
@@ -176,8 +172,8 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-CELERY_BROKER_URL = 'redis://:krispi@103904@localhost:6379//'
-CELERY_RESULT_BACKEND = 'db+postgresql://postgres:piyush@103@localhost:5432/imango'
+CELERY_BROKER_URL = 'redis://:krispi@103904@localhost:6379//' if USERNAME == 'jarden' else 'redis://:d2xy0QBprYp8a9Dgvhz8mYjURb4jbCHq@redis-19040.c1.ap-southeast-1-1.ec2.cloud.redislabs.com:19040//'
+CELERY_RESULT_BACKEND = 'db+postgresql://postgres:piyush@103@localhost:5432/imango' if USERNAME == 'jarden' else 'db+postgresql://postgres:krispi@103904@localhost:5432/gipsomedb'
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
