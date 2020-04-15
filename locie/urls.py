@@ -18,12 +18,12 @@ urlpatterns = [
     path('accountPassworReset/servei/',ServeiPasswordReset.as_view()),
 
     #Servei Order History
-    path('orderHistory/servei/',ServeiOrderHistory.as_view()),
+    # path('orderHistory/servei/',ServeiOrderHistory.as_view()),
 
     #Item Alter
     path('serveiAlterItem/',ItemAlterView.as_view()),
     # one account
-    path('account/',CustomerLogin.as_view()),
+    path('account/',CustomerLogin.as_view()), #--check
     path('cityCode/',CityCodeCreate.as_view()),
     #Analytics
     path('analytics/',Analytics.as_view()),
@@ -45,12 +45,14 @@ urlpatterns = [
     path('portfolio/',PortfolioManager.as_view()),
     #StoreCreate
     path('new-store/',CreateStoreView.as_view()),
-    #Head Categories
-    path('head-categories/',HeadCategories.as_view()),
+
     # registration_id  update
-    path('fcm_key_update/',RPMNSRegistartionUpdate.as_view()),
+    path('fcm_key_update/',RPMNSRegistartionUpdate.as_view()), #-check
     # OrderServeiInterface
     path('order-interface-servei/',OrderServeiInterface.as_view()),
+
+    #Customer Order Interface --check
+    path('customer-order-interface/',CustomerOrderInterface.as_view()), # --check
     # Availablity
     path('available/',ServeiAvailablity.as_view()),
 
@@ -63,6 +65,20 @@ urlpatterns = [
     #WebView
     path('webView/',WebView.as_view()),
    
+   #Super User account
+   path('superuser/',SuperUserAccount.as_view()),
+   path('checkstore/',CheckStore.as_view()),
+
+   #CategoryCreation
+   path('categoryCreation/',CategoryCreation.as_view()),
+
+   #Customer Addmission
+   path('customerAddmission/',CustomerAddmission.as_view()), # --check
+
+   #Pilot Addmission
+   path('pilotAddmission/',PilotAddmission.as_view()),
+
+
    
 
 ]

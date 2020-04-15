@@ -22,10 +22,10 @@ class AccountManager(BaseUserManager):
 
     use_in_migrations = True
 
-    def _create_account(self, account_id:str, password:str, relation:str, phone_number:str, is_superuser:bool=False):
+    def _create_account(self, account_id:str, password:str, relation:str, phone_number:str, is_superuser:bool=False,is_staff:bool=False):
         # print(account_id, password,  phone_number)
         if account_id and password and relation and phone_number:
-            account = Account.objects.create(account_id=account_id, relation=relation,
+            account = Account.objects.create(account_id=account_id, relation=relation,is_staff=is_staff,
                               phone_number=phone_number,  is_superuser=is_superuser)
             account.set_password(password)
             account.save(using=self._db)
@@ -38,18 +38,19 @@ class AccountManager(BaseUserManager):
         return self._create_account(account_id, password, relation, phone_number)
 
     def create_super_account(self, account_id:str, password:str, relation:str,  phone_number:str):
-        return self._create_account(account_id, password, relation,  phone_number, is_superuser=True)
+        return self._create_account(account_id, password, relation,  phone_number, is_superuser=True,is_staff=True)
 
 
 class Account(AbstractBaseUser, PermissionsMixin):
     account_id = models.CharField(
         max_length=30, unique=True, default='account_id')
-    data_joined = models.DateField(default = timezone.now().date() )
+    date_joined = models.DateField(default = timezone.now())
     phone_number = models.CharField(max_length=15, default='', db_index=True)
+    is_staff = models.BooleanField(default=False)
     # phone_token = models.TextField(default='', db_index=True)
     is_superuser = models.BooleanField(default=False)
     # servei,de,customer
-    # 002 : Servei, 002: Pilot, 009: customer, 001: Locie
+    # 002 : Servei, 003: Pilot, 009: customer, 001: Locie
     relation = models.CharField(max_length=20, default='', db_index=True)
     # FCM Token of device
     # device_token = models.TextField(default='')
@@ -63,20 +64,19 @@ class Account(AbstractBaseUser, PermissionsMixin):
         verbose_name = ('account')
         verbose_name_plural = ('accounts')
     
-    def pour(self,request:dict):
+    def pour(self,request):
 
         # Check city is available or not?
-        city_code = None
-        try:
-            city_code = CityCode.objects.get(pin_codes__contains = [request['pin_code']])
-            city_code = city_code.cityCode
-        except :
-            # Service not provided in the city
+        city_code = CityCode.objects.filter(pin_codes__contains = [request['pin_code']])
+        if not city_code:
             return -1,-1
+        else:
+            city_code = city_code.first().cityCode
 
         
         account = None
-        # Check account exist or not ?
+        # Check account exist or not ? 
+        #TODO: Abandoned block needed to be removed
         try:
             # print('in account try')
             if request['relation'] == '009':
@@ -99,6 +99,7 @@ class Account(AbstractBaseUser, PermissionsMixin):
         except:
             # print('in account except')
             account_id = None
+            # print(f"Inside except {request['phone_number']} : {account_id}") 
             if request['relation'] == '009':
                 account_id = request['phone_number']
             elif request['relation'] == '002':
@@ -106,12 +107,14 @@ class Account(AbstractBaseUser, PermissionsMixin):
             elif request['relation'] == '003':
                 account_id = pilot_id_creatore(city_code,request['aadhar'],request['phone_number'])
 
-            # Creating New Account    
+            # Creating New Account   
+           
             account = AccountManager().create_account(account_id,request['password'],request['relation'],request['phone_number'])
             # print(account)
             
         # print(account)
-        if 'phone_token' in request:
+        keys = request.keys()
+        if 'phone_token' in keys:
             if request['relation'] == '009':
                 device = CustomerDevice.objects.get_or_create(customer_id = account.account_id)[0]
                 device.registration_id = request['phone_token']
@@ -132,7 +135,7 @@ class Account(AbstractBaseUser, PermissionsMixin):
         coordinates.save()
                                            
         partner = None
-        keys = request.keys()
+        
         #Servei
         if request['relation'] == '002':
             partner = Servei.objects.get_or_create(servei_id = account.account_id)[0]
@@ -146,7 +149,7 @@ class Account(AbstractBaseUser, PermissionsMixin):
             partner.cityCode = city_code
             partner.account = account
             partner.aadhar = request['aadhar']
-            partner.address = request['address'] if isinstance(request['address'],dict) else json.load(request['address'])
+            partner.address = request['address'] if isinstance(request['address'],dict) else json.loads(request['address'])
             partner.pin_code = request['pin_code']
             
             for key in keys:
@@ -168,17 +171,22 @@ class Account(AbstractBaseUser, PermissionsMixin):
         
         # Customer
         elif request['relation'] == '009':
-            partner = Customer.objects.get_or_create(customer_id = account.account_id)[0]
-            partner.dob = datetime.datetime.strptime(request['dob'],'%d-%m-%Y')
+            # print(account)
+            print(account.account_id)
+            partner = Customer.objects.get_or_create(customer_id = account.account_id,account=account)[0]
             partner.account = account
+            partner.dob = datetime.datetime.strptime(request['dob'],'%d-%m-%Y')
+            
 
-            for key in request.keys:
+            for key in keys:
                 if key == 'gender':
                     partner.gender = request['gender']
                 elif key == 'address':
                     partner.address = request['address']
                 elif key == 'lat':
-                    partner.coordinates = Point(float(request['lat']),float(request['long']))
+                    partner.coordinates_id = coordinates.coordinates_id
+                elif key == 'extras':
+                    partner.extras = request['extras']
             partner.save()
         
         # Pilot
@@ -199,7 +207,7 @@ class Account(AbstractBaseUser, PermissionsMixin):
             partner.dl_image = request['dl_image']
             partner.coordinates_id = coordinates.coordinates_id
 
-            if 'email' in request:
+            if 'email' in keys:
                 partner.email = request['email']
             partner.save()
         
@@ -258,9 +266,9 @@ class Item(models.Model):
     prev_cat = models.CharField(max_length=30, default=True)
     father_cat = models.CharField(max_length=30, default=True)
 
-    # varinats -> JSON -> {'parameter','variants':[]}
+    # varinats -> JSON -> {'parameter','variant':[{value,price,image}]}
     variants = JSONField(default=dict)
-    required_desc = ArrayField(models.CharField(max_length=50), default=list)
+    required_desc = ArrayField(models.CharField(max_length=80),default=list)
     #postComplete = models.BooleanField(default=False)
     ratings = models.DecimalField(max_digits=3, decimal_places=2, default=0.00)
 
@@ -426,8 +434,8 @@ class OfficialRequest(models.Model):
     # token of application
     token = models.TextField(default='')
 
-    date_requested = models.DateField(default = timezone.now().date())
-    date_applied = models.DateField(default= timezone.now().date())
+    date_requested = models.DateField(default = timezone.now())
+    date_applied = models.DateField(default= timezone.now())
 
     # applied or not
     applied = models.BooleanField(default=False)
@@ -449,15 +457,14 @@ class Order(models.Model):
 
     """
     # servei_cluster: {
-    #    'servei_id':{
-    #        'items':[...],
-    #        'store_key':...,
-    #        'status': ACCEPTED/DECLINED/START (accepted & processing/ canceled),
-    #         'effective_price':...
-    #         'store_name':...,                   
-    #             
+    # 'servei_id':{
+    # 'items':[...],
+    # 'store_key':...,
+    # 'status': ACCEPTED/DECLINED/START (accepted & processing/ canceled),
+    # 'effective_price':...
+    # 'store_name':...,                                
     # },
-    #     ......
+    #  ......
     #  }
     # """
     servei_cluster = JSONField(default=dict)
@@ -517,9 +524,9 @@ class Order(models.Model):
         srid=4326, default=Point(0.00, 0.00, srid=4326))
 
     # Date of order creation
-    date_of_creation = models.DateField(default = timezone.now().date())
+    date_of_creation = models.DateField(default = timezone.now())
     # Time of order creation
-    time_of_creation = models.TimeField(default = timezone.now().time())
+    time_of_creation = models.TimeField(default = timezone.now())
 
     # creation = models.DateTimeField(auto_now=True)
 
@@ -531,60 +538,60 @@ class Order(models.Model):
     payment_method = models.CharField(max_length=30, default='', db_index=True)
     payment_online = models.BooleanField(default=False)
 
-    # Order Type i.e MultiPick or Single Pick (67 or 77)
-    delivery_type = models.IntegerField(default=00)
-
     # delivery_type i.e SSU, UDS or SDU
-    order_type = models.CharField(max_length=3, default='')
+    delivery_type = models.CharField(max_length=3, default='')
 
+    
+    # Order Type i.e MultiPick or Single Pick (67 or 77)
+    order_type = models.IntegerField(default=00)
     cityCode = models.CharField(max_length=8, default='')
     otp = models.CharField(max_length=10, default='')
 
 
 # Category
-
+#TODO: MakeMigrations to show cat_id.default ='' not True
 class Category(models.Model):
     cat_id = models.CharField(
-        max_length=30, db_index=True, default=True, unique=True)
+        max_length=50, db_index=True, default='', unique=True)
     name = models.CharField(max_length=50, db_index=True, default='')
-    prev_cat = models.CharField(max_length=20, default='')
-    image = models.TextField(default='')
-    next_cat = ArrayField(models.CharField(max_length=30), default=list)
-    father_cat = models.CharField(max_length=30, default='')
+    prev_cat = models.CharField(max_length=50, default='',blank=True)
+    image = models.TextField(default='',blank=True)
+    next_cat = ArrayField(models.CharField(max_length=50), default=list,blank=True)
+    father_cat = models.CharField(max_length=50, default='',blank=True)
 
     # Category type ---> FC(Father Category), SC (Sub- Category),MC (Micro Category) NC(Nano Category)
 
-    cat_type = models.CharField(max_length=2, db_index=True, default='')
+    cat_type = models.CharField(max_length=2, db_index=True, default='',blank=True)
 
     # citySite --> Array Store cityCode which will have this category working
     # Servei won't be affected by this--> Servei will see all the options available
     # User screen will filter according to this
     # Upon adding first servei to any category--> server will automatically add the cityCode--> Check if cityCode is in citySite of category --> ifnot add the cityCode in the Array
     city_site = ArrayField(models.CharField(
-        max_length=5, db_index=True), default=list)
+        max_length=5, db_index=True), default=list,blank=True)
 
     required_desc = ArrayField(models.CharField(
-        max_length=50, db_index=True), default=list)
+        max_length=50, db_index=True), default=list,blank=True)
 
     # Delivery Type --> SSU, SDU, UDS
-    delivery_type = models.CharField(max_length=3, default='')
+    delivery_type = models.CharField(max_length=3, default='',blank=True)
 
     # PickType --> OP (One Pick) , MP (Multi Pick)
-    pick_type = models.CharField(max_length=2, default='OP')
+    pick_type = models.CharField(max_length=2, default='OP',blank=True)
 
     # Post Complete Enabled
     # True will give Servei access to implement post-complete feature in item
     #postCompleteEnable = models.BooleanField(default=False)
 
     # Radiod if true will tell to put radio button
-    radiod = models.BooleanField(default=False)
+    radiod = models.BooleanField(default=False,blank=True)
 
     # returnable if True than servei will accept the return and if false than servei wont take the return
-    returnable = models.BooleanField(default=True)
-
+    returnable = models.BooleanField(default=True,blank=True)
+    inspection = models.BooleanField(default=False,blank=True)
     # Defaults items under this category
     # [{item_id,name},{item_id,name}]
-    default_items = ArrayField(models.CharField(max_length=50), default=list)
+    default_items = ArrayField(models.CharField(max_length=50), default=list,blank=True)
 
 
 # Default Items class
@@ -593,13 +600,14 @@ class DefaultItems(models.Model):
     cat_id = models.CharField(max_length=50, db_index=True, default='')
     measure_param = models.CharField(max_length=30, default='')
     unit = models.CharField(max_length=4, default='')
-    image = models.TextField(default='')
+    image = models.TextField(default='',blank=True)
     pick_type = models.CharField(max_length=2, default='SP')
     delivery_type = models.CharField(max_length=3, default='')
-    father_cate = models.CharField(max_length=50, default='', db_index=True)
+    father_cat = models.CharField(max_length=50, default='', db_index=True)
     name = models.CharField(max_length=50, default='')
     inspection = models.BooleanField(default=False)
-    description = models.TextField(default='')
+    description = models.TextField(default='',blank=True)
+    required_desc = ArrayField(models.CharField(max_length=70),default=list,blank=True)
 
 
 # # Checking
@@ -616,50 +624,15 @@ class CityCode(models.Model):
     pin_codes = ArrayField(models.CharField(max_length=10), default=list)
 
 
-# class OTPLog(models.Model):
-#     # otp_id = models.AutoField(primary_key=True,default=randint(0,100))
-#     created = models.DateField(default = datetime.date.today)
-#     data = models.CharField(max_length=8,default='',db_index=True)
-#     # order_id = ArrayField(models.CharField(max_length=50))
-
-
-class PhoneToken(models.Model):
-    token = models.TextField(default='')
-    created = models.DateTimeField(default = timezone.now())
-    phone_number = models.CharField(default='', max_length=12, db_index=True)
-
-#--------------------------RPMNS----------------------------------------------------------#
-#-----------------------------------------------------------------------------------------#
-
-
-class InterCorse(models.Model):
-    # device to device notification
-    sender = models.CharField(max_length=30, db_index=True, default='')
-    receipient = models.CharField(max_length=30, db_index=True)
-    content = JSONField(default=dict)
-
-
-class OntoNotfication(models.Model):
-    #  server to device notification
-    receipient = models.CharField(max_length=30, default='')
-    receipient_token = models.TextField(default='')
-    created_at = models.DateTimeField(default = timezone.now())
-    # notification or data =[fetch-order, update-order, etc]
-    typo = models.CharField(max_length=10, default='')
-    content = JSONField(default=dict)
-
-
 class MobileDevice(AbstractFCMDevice):
 
-    # Id of receipient servei_id,pilot_id,customer_id
-    # customer_id = models.CharField(max_length=50, default='', db_index=True)
     # receipient 'servei/customer/de
     # if receipient is customer then locie_partner will have servei_id or pilot_id
     locie_partner = models.CharField(max_length=50, default='', db_index=True)
     # 001 : Locie, 002:Servei, 003:Pilot, 009:Customer
     partnership = models.CharField(max_length=10, default='', db_index=True)
 
-    # object = MobileDeviceManager()
+
 
     class Meta:
         verbose_name = ('FCM device')
@@ -669,7 +642,6 @@ class MobileDevice(AbstractFCMDevice):
 class CustomerDevice(AbstractFCMDevice):
     customer_id = models.CharField(max_length=50, default='', db_index=True)
 
-    # object = MobileDeviceManager()
 
 
 #----------------------------------RPMNS---------------------------------------------------#
@@ -681,7 +653,8 @@ class Customer(models.Model):
     address = JSONField(default=dict)
     coordinates_id = models.CharField(max_length=50,db_index=True,default='')
     account = models.OneToOneField(Account, on_delete=models.CASCADE)
-    dob = models.DateField(default = timezone.now().date())
+    dob = models.DateField(default = timezone.now())
+    extras = JSONField(default=dict)
     # coordinates = CoordinateManager(coordinates_id)
 
 
@@ -734,10 +707,28 @@ class Rate(models.Model):
 
 class MeasureParam(models.Model):
     measure_id = models.CharField(
-        max_length=30, primary_key=True, default='krispiforever@103904tilltheendoftheinfinity')
+        max_length=50, primary_key=True, default='krispiforever@103904tilltheendoftheinfinity')
     # 0.5,1,10,25,50,100,150,200,500,
-    units = ArrayField(models.IntegerField(), default=list)
+    units = ArrayField(models.DecimalField(max_digits=4, decimal_places=2, default=00.00), default=list)
     # kg,gm,sqrft,pkt.,..etc
     measure_params = ArrayField(models.CharField(max_length=30), default=list)
 
 
+class Cart(models.Model):
+    cart_id = models.CharField(max_length=75,default='',primary_key=True)
+    clusters = ArrayField(JSONField(),default=list)
+    price = models.DecimalField(max_digits=7,decimal_places=2,default=00.00)
+    effective_price = models.DecimalField(max_digits=7,decimal_places=2,default=00.00)
+    total_quantity = models.DecimalField(max_digits=5,decimal_places=2,default=00.00)
+    customer_id = models.CharField(max_length=70,db_index=True,default='')
+
+
+class LocieStoreSite(models.Model):
+    uname = models.CharField(max_length=120,primary_key=True,default='')
+    # Complete link uname.locie.co.in
+    store_link = models.CharField(max_length=255,db_index=True,default='')
+    # {"page_name":{"tag":"html","childrens":[]}}
+    site = JSONField(default=dict)
+    # {"page_name":{}}
+    site_context = JSONField(default=dict)
+    

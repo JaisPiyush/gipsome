@@ -55,9 +55,9 @@ class PilotCreate(APIView):
                                              dl_image = request.POST['dl_image'],rating = 0.00,phone_number=request.POST['phone_number'],email = request.POST['email'])
                 #Create a coordinate
                 if not Coordinates.objects.filter(reference_id=pilot.pilot_id):
-                    coords = Coordinates.objects.create(unique_id=coord_id_generator(pilot.cityCode,pilot.pilot_id),
-                                                        relation='002',reference_id=pilot.pilot_id,cityCode=pilot.cityCode)
-                    pilot.coordinates = coords.unique_id
+                    coords = Coordinates.objects.create(coordinates_id=coord_id_generator(pilot.cityCode,pilot.pilot_id),
+                                                        relation='002')
+                    pilot.coordinates = coords.coordinates_id
                     pilot.save()
                 return Response({'pilot':PilotSerializer(pilot).data,'pilot_id':pilot.pilot_id,'coordinates':CoordinatesSerializer(coords).data},status=status.HTTP_201_CREATED)
             

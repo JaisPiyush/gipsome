@@ -25,7 +25,7 @@ SECRET_KEY = '%^*2esaf@ou%psce0oc%^tqw@)_55_=f#0wr24-q=ktx^!_zi3'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []#['ec2-13-126-115-213.ap-south-1.compute.amazonaws.com', '13.126.115.213',]
+ALLOWED_HOSTS = ["*"]#['ec2-13-126-115-213.ap-south-1.compute.amazonaws.com', '13.126.115.213',]
 
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
@@ -46,7 +46,9 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'locie.apps.LocieConfig',
     'fcm_django',
+    'corsheaders',
     'django_jenkins',
+    'django_hosts',
 ]
 
 PROJECT_APPS = [
@@ -73,6 +75,8 @@ REST_FRAMEWORK = {
 }
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
+    'django_hosts.middleware.HostsRequestMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -80,15 +84,22 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django_hosts.middleware.HostsResponseMiddleware',
 ]
 
 ROOT_URLCONF = 'locie_server.urls'
+ROOT_HOSTCONF = 'locie_server.hosts'
+DEFAULT_HOST = 'locie_server'
 SECURE_SSL_REDIRECT = False
+CORS_ORIGIN_ALLOW_ALL = True
+# CORS_ORIGIN_WHITELIST =[
+#     "http://localhost:3000"
+# ]
 
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR+"/templates",],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -164,3 +175,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
 STATIC_URL = '/static/'
+
+CELERY_BROKER_URL = 'redis://:krispi@103904@localhost:6379//'
+CELERY_RESULT_BACKEND = 'db+postgresql://postgres:piyush@103@localhost:5432/imango'
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'

@@ -43,14 +43,16 @@ def storeKeyGenerator(servei_id):
     # cityCode@aadhar[3:9]-phone_number[6:]STRdate-time
     servei_id = servei_id.split('SER')
     delimatore = ['-'.join(servei_id), 'STR',
-                  datetime.now().strftime('%d%m%Y-%H%M%S')]
+                  datetime.utcnow().strftime('%d%m%Y-%H%M%S')]
     return ''.join(delimatore)
 
 
 def item_id_generator(servei_id):
     #UP53@57260SER6167ITMdate-time
-    delimator = [servei_id,'ITM',datetime.now().strftime('%d%m%Y-%H%M%S')]
+    delimator = [servei_id,'ITM',datetime.utcnow().strftime('%d%m%Y-%H%M%S')]
     return ''.join(delimator)
+
+
 
 
 # OTP
