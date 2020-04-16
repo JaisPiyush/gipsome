@@ -117,19 +117,19 @@ WSGI_APPLICATION = 'locie_server.wsgi.application'
 DATABASES = {
     # 'default': {
     #     'ENGINE': 'django.contrib.gis.db.backends.postgis',
-    #     'NAME': 'gipsomedb',
+    #     'NAME': 'imango',
     #     'HOST':'localhost',
     #     'PORT':'5432',
     #     'USER':'gipsome',
-    #     'PASSWORD':'krispi@103904'
+    #     'PASSWORD':'piyush@103'
     # }
     'default': {
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
-        'NAME': 'gipsomedb' if USERNAME != 'jarden' else 'imango',
+        'NAME': 'gipsomedb',
         'HOST':'localhost',
         'PORT':'5432',
         'USER':'postgres',
-        'PASSWORD':'krispi@103904' if USERNAME != 'jarden' else 'piyush@103'
+        'PASSWORD':'krispi@103904' 
     }
 }
 
