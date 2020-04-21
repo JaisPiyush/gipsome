@@ -520,6 +520,8 @@ class ItemCreateView(APIView):
         item.variants = data['variants']
         item.required_desc = data['requirments']
         item.cityCode = data['cityCode']
+        if 'default_item_id' in data.keys():
+            item.default_item_id = data['default_item_id']
         item.city = CityCode.objects.get(cityCode=data['cityCode']).city
         item.save()
         serial = ItemSerializer(item)

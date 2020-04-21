@@ -14,5 +14,8 @@ urlpatterns = [
 
     # @class CityCodeExtractor
     path('cityCode/',CityCodeExtractor.as_view()),
+
+    # @class DefaultItemPull
+    path('defItems/',DefaultItemPull.as_view()),
     
 ]

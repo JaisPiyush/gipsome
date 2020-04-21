@@ -268,9 +268,12 @@ class Item(models.Model):
 
     # varinats -> JSON -> {'parameter','variant':[{value,price,image}]}
     variants = JSONField(default=dict)
-    required_desc = ArrayField(models.CharField(max_length=80),default=list)
+    required_desc = ArrayField(models.CharField(max_length=80),default=list,blank=True)
     #postComplete = models.BooleanField(default=False)
     ratings = models.DecimalField(max_digits=3, decimal_places=2, default=0.00)
+
+    # Id of default_item if associated with
+    default_item_id = models.CharField(max_length=70,default='none')
 
 
 # Position Database
@@ -731,4 +734,5 @@ class LocieStoreSite(models.Model):
     site = JSONField(default=dict)
     # {"page_name":{}}
     site_context = JSONField(default=dict)
-    
+
+

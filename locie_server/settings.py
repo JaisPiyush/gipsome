@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/3.0/ref/settings/
 """
 
 import os
-import getpass
+# import getpass
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -91,7 +91,7 @@ CORS_ORIGIN_ALLOW_ALL = True
 # CORS_ORIGIN_WHITELIST =[
 #     "http://localhost:3000"
 # ]
-USERNAME = getpass.getuser()
+# USERNAME = getpass.getuser()
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -115,22 +115,22 @@ WSGI_APPLICATION = 'locie_server.wsgi.application'
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
 
 DATABASES = {
-    # 'default': {
-    #     'ENGINE': 'django.contrib.gis.db.backends.postgis',
-    #     'NAME': 'imango',
-    #     'HOST':'localhost',
-    #     'PORT':'5432',
-    #     'USER':'gipsome',
-    #     'PASSWORD':'piyush@103'
-    # }
     'default': {
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
-        'NAME': 'gipsomedb',
+        'NAME': 'imango',
         'HOST':'localhost',
         'PORT':'5432',
         'USER':'postgres',
-        'PASSWORD':'krispi@103904' 
+        'PASSWORD':'piyush@103'
     }
+    # 'default': {
+    #     'ENGINE': 'django.contrib.gis.db.backends.postgis',
+    #     'NAME': 'gipsomedb',
+    #     'HOST':'localhost',
+    #     'PORT':'5432',
+    #     'USER':'postgres',
+    #     'PASSWORD':'krispi@103904' 
+    # }
 }
 
 
@@ -172,8 +172,8 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-CELERY_BROKER_URL = 'redis://:krispi@103904@localhost:6379//' if USERNAME == 'jarden' else 'redis://:d2xy0QBprYp8a9Dgvhz8mYjURb4jbCHq@redis-19040.c1.ap-southeast-1-1.ec2.cloud.redislabs.com:19040//'
-CELERY_RESULT_BACKEND = 'db+postgresql://postgres:piyush@103@localhost:5432/imango' if USERNAME == 'jarden' else 'db+postgresql://postgres:krispi@103904@localhost:5432/gipsomedb'
+CELERY_BROKER_URL = 'redis://:krispi@103904@localhost:6379//'# if USERNAME == 'jarden' else 'redis://:d2xy0QBprYp8a9Dgvhz8mYjURb4jbCHq@redis-19040.c1.ap-southeast-1-1.ec2.cloud.redislabs.com:19040//'
+CELERY_RESULT_BACKEND = 'db+postgresql://postgres:piyush@103@localhost:5432/imango' # if USERNAME == 'jarden' else 'db+postgresql://postgres:krispi@103904@localhost:5432/gipsomedb'
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'

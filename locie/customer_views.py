@@ -15,6 +15,7 @@ from secrets import token_urlsafe
 import json
 from django.db.models import Q
 from .serializers import CityCodeSerializer
+from .tdmos import order_id_generator
 
 
 
@@ -49,6 +50,7 @@ class CustomerCategoryView(APIView):
         data = requests.GET
         categories = []
         items = []
+        default_items = []
         # print(data.keys())
         prevCat = None
         if 'only-head' in data.keys():
@@ -59,14 +61,17 @@ class CustomerCategoryView(APIView):
             categories = Category.objects.filter(Q(city_site__contains=[data['cityCode']]) & Q(prev_cat = data['cat_id']))
             prevCat = Category.objects.get(cat_id=data['cat_id'])
             categories = [{"cat_id":category.cat_id,"prev_cat":category.prev_cat,"name":category.name,"image":category.image,"cat_type":category.cat_type,"delivery_type":category.delivery_type}for category in categories]
-            items = Item.objects.filter(Q(prev_cat=data['cat_id']) & Q(cityCode = data['cityCode']))
+            items = Item.objects.filter(Q(prev_cat=data['cat_id']) & Q(cityCode = data['cityCode']) & Q(default_item_id = 'none'))
+            default_items = [{"item_id":item.item_id,"cat_id":item.cat_id,"measure":item.measure_param,"image":item.image,"unit":item.unit,"name":item.name} for item in DefaultItems.objects.filter(cat_id=data['cat_id'])]       
+
+
             if items:
                 items = [{"item_id":item.item_id,"prev_cat":item.prev_cat,"name":item.name,"images":item.images if hasattr(item,'images') else '',
                          "store_key":item.store_key,"servei_id":item.servei_id,"price":item.price,"effective_price":item.effective_price,
                          "unit":item.unit,"measure":item.measure_param,"store_name":Store.objects.get(store_key=item.store_key).store_name} for item in items]
-        if categories or items:
-            
-            return Response({"categories":categories,"items":items,"prev_name":prevCat.name if prevCat is not None else ""},status=status.HTTP_200_OK)
+        if len(categories) > 0  or len(items) > 0 or len(default_items) > 0:
+            del data
+            return Response({"categories":categories,"items":items,"prev_name":prevCat.name if prevCat is not None else "","default_items":default_items},status=status.HTTP_200_OK)
         else:
             return Response({"prev_name":prevCat.name},status=status.HTTP_200_OK)
 
@@ -140,7 +145,7 @@ class StoreView(APIView): #@class
     permission_classes = [AllowAny] #list:
     """
      *Send Store data to Customer upon clicking item in ItemView or directly calling the store
-     @param store_key
+     @param store_key,item_id
      @steps :: store-execution  
         @function ::: Store.objects.get(store_key) 
         @function ::: Item.objects.filter(Q(store_key))
@@ -198,6 +203,65 @@ class CityCodeExtractor(APIView):
             else:
                 return Response({},status=status.HTTP_400_BAD_REQUEST)
 
+
+
+class DefaultItemPull(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, format=None):
+        data = request.GET
+        default_item = DefaultItems.objects.get(item_id=data['item_id'])
+        prev_cat = Category.objects.get(cat_id=default_item.cat_id)
+        items = [{"item_id":item.item_id,"prev_cat":item.prev_cat,"name":item.name,"images":item.images if hasattr(item,'images') else '',
+                         "store_key":item.store_key,"servei_id":item.servei_id,"price":item.price,"effective_price":item.effective_price,
+                         "unit":item.unit,"measure":item.measure_param,"store_name":Store.objects.get(store_key=item.store_key).store_name} for item in Item.objects.filter(Q(cityCode=data['cityCode']) & Q(default_item_id=default_item.item_id))]
+        if len(items) > 0 :
+            return Response({"items":items,"prev_name":default_item.name,"prev_image":default_item.image},status=status.HTTP_200_OK)
+
+
+
+
+class TemporaryOrderSystem(APIView):
+    permission_classes = [AllowAny]
+    """
+      - Date 17 April 2020, COVID-19 Outbreak 
+      - Heading toward soft-launch on 20 April 2020, starting from groceries and essentials
+      - Ephemeral Cart on website will send the clusters containing data of items ordered
+      @param(item_id,item_name,servei_id,quantity,price,effective_price,unit,measure,store_name,store_key)
+      - Cart will contain additional data for our supervised service
+      @param(customer_phone_number,customer_name,address)
+      - System will take order and create Order  Model only with servei_cluster, items_cluster,effective_price,price,cityCode
+      - Will add data only regarding above parameters 
+      - customer_phone_numebr will ber used as customer_id
+      - After Order Creation Notification will be sent on my phone, After which I will monitor the order untill I mark it finished
+      - order status will only have two categories START and FINISHED
+      - For Nearest Future amount above 700 will pay 8% and 20 delivery Charge
+         
+    """
+
+    def post(self, request, format=None):
+        data = request.GET
+        order = Order.objects.create(order_id=order_id_generator(data['customer_phone_number']))
+        price = 0.0
+        effective_price = 0.0
+        for cluster in  data['clusters']:
+            if cluster['servei_id'] in order.servei_cluster.keys():
+                order.servei_cluster[cluster['servei_id']]['items'].append(cluster['item_id'])
+                order.servei_cluster[cluster['servei_id']]['effective_price'] += cluster['effective_price']
+            else:
+                order.servei_cluster[cluster['servei_id']] = {"itmes":[cluster['item_id']],"effective_price":cluster['effective_price']}
+            order.items_clutser[cluster['item_id']] = cluster
+            # TODO: less secure  Future Warning should use direct extraction of prices frfom ORM 
+            # Hijacking could lead to customer-wanted price
+            price += cluster['price']
+            effective_price += cluster['effective_price']
+        order.customer_id = data['customer_phone_number']
+        order.customer_name = data['customer_name']
+        order.customer_address = data['address']
+        order.price = price
+        order.effective_price = effective_price
+        order.save()
+        return Response({"order_id":order.order_id},status=status.HTTP_201_CREATED)
 
 
 

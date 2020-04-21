@@ -192,8 +192,8 @@ class CustomerOrderInterface(APIView):
             order.payment_method = data['payment_method']
             # json boolens are true/false whereas Python booleans are True/False
             order.payment_online = True if data['payment_online'] == 1 else False
-            order.customer_coords = Point(
-                data['customer_coords']['lat'], data['customer_coords']['long'], srid=4326)
+            if 'customer_coords' in data.keys():
+                order.customer_coords = Point(data['customer_coords']['lat'], data['customer_coords']['long'], srid=4326)
             for cluster in data['clusters']:
                 if cluster['servei_id'] in order.servei_cluster.keys():
                     order.servei_cluster[cluster['servei_id']
