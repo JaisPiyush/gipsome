@@ -1,23 +1,25 @@
 from bs4 import BeautifulSoup
 from bs4.element import Tag
+
+
 class Engine:
 
-    def parser(self,data,page_name="index"):
+    def parser(self, data, page_name="index"):
         """
           {"tag","attributes","closed","childrens"}
         """
         data = data.rstrip("\n")
-        self.soup = BeautifulSoup(data,features='html.parser')
-        self.parsed= self.convert(self.soup.html)
-        return {page_name:self.parsed}
-    
-    def convert(self,tag):
-        if isinstance(tag,Tag):
+        self.soup = BeautifulSoup(data, features='html.parser')
+        self.parsed = self.convert(self.soup.html)
+        return {page_name: self.parsed}
+
+    def convert(self, tag):
+        if isinstance(tag, Tag):
             converted = {
-                "tag":f"{tag.name}",
-                "attributes":tag.attrs,
+                "tag": f"{tag.name}",
+                "attributes": tag.attrs,
                 "closed": 0 if tag.can_be_empty_element else 1,
-                "childrens":[]
+                "childrens": []
             }
             if not tag.can_be_empty_element:
                 for child in tag.childGenerator():
@@ -28,8 +30,7 @@ class Engine:
         else:
             return tag
 
-
-    def render(self, data,page_name='index'):
+    def render(self, data, page_name='index'):
         """
          stored as {"page_name":[{}]}
          data = {"tag":"html","attributes","childrens"}
@@ -65,21 +66,3 @@ class Engine:
         return template
 
 
-
-# data = '''
-# <html lang="en" >
-# <head lang="en">
-# <title>Title</title>
-# <script>var a = 12;
-# console.log(a);
-# </script></head>
-# <body>
-# <img src="abc" />
-# <p class = "color: red;"> Name</p>
-# <p>norm</p></body></html>
-# '''
-
-# engine = Engine()
-# parsed = engine.parser(data)
-# print(parsed)
-# print(engine.render(parsed))

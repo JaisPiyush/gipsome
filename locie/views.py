@@ -1,12 +1,7 @@
-# from django.shortcuts import render, HttpResponse
 from rest_framework.authentication import TokenAuthentication
-# from django.template import Context, Template
-# from rest_framework.pagination import PageNumberPagination
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
-# from rest_framework.generics import GenericAPIView, ListAPIView
-# from .paginate import StandardResultSetPagination
 from rest_framework.views import Response
 from rest_framework import status
 from .serializers import AccountCreationSerializer
@@ -55,7 +50,8 @@ class AccountAddmission(APIView):
             if account == -1:
                 return Response({},status= status.HTTP_406_NOT_ACCEPTABLE )
             else:
-                return Response({'token':Token.objects.get(user = account).key,'cityCode':city_code,'account_id':account.account_id,'phone_number':account.phone_number,'relation':account.relation},status=status.HTTP_202_ACCEPTED)
+                return Response({'token':Token.objects.get(user = account).key,'cityCode':city_code,'account_id':account.account_id,
+                'phone_number':account.phone_number,'relation':account.relation},status=status.HTTP_202_ACCEPTED)
 
 
 class ServeiLogin(APIView):
@@ -67,9 +63,9 @@ class ServeiLogin(APIView):
             servei = None
             account = None
             if 'aadhar' in request.POST.keys():
-                servei = Servei.objects.get(aadhar = request.POST['aadhar'])
+                servei = Servei.objects.filter(aadhar = request.POST['aadhar']).first()
             elif 'servei_id' in request.POST.keys():
-                servei = Servei.objects.get(servei_id = request.POST['servei_id'])
+                servei = Servei.objects.filter(servei_id = request.POST['servei_id']).first()
             if servei:
                 account = Account.objects.get(account_id=servei.servei_id)
             else:
@@ -135,29 +131,6 @@ class ServeiLogOut(APIView):
             store.save()
         return Response({},status=status.HTTP_200_OK)
 
-
-# Customer Login
-class CustomerLogin(ObtainAuthToken):
-    def get(self, request, format=None):
-        account = None
-        servei = None
-        if 'aadhar' in request.GET.keys():
-            servei = Servei.objects.filter(aadhar=request.GET['aadhat'])
-            if servei:
-                servei = servei.first()
-                account = servei.account
-        else:
-            account = Account.objects.filter(account_id= request.GET['account_id'])
-            if account:
-                account = account.first()
-            else:
-                return Response({'error': 'Un-Authorised'}, status=status.HTTP_403_FORBIDDEN)
-
-        if account.check_password(request.POST['password']):
-            token, created = Token.objects.get_or_create(user=account)[0]
-            return Response({'account_id': account.account_id, 'token': token.key,'aadhar':servei.aadhar,'phone_number':servei.phone_number,'cityCode':servei.cityCode,'first_name':servei.first_name,'last_name':servei.last_name,'online':1 if servei.online else 0}, status=status.HTTP_202_ACCEPTED)
-        else:
-            return Response({'error': 'Un-Authorised'}, status=status.HTTP_401_UNAUTHORIZED)
 
 
 # Create Store View
@@ -286,18 +259,18 @@ class CityCodeCreate(APIView):
 
 
 
-# Portfolio Import
-# Only Name and phone_number and address
-class ServeiPortifolio(APIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
+# # Portfolio Import
+# # Only Name and phone_number and address
+# class ServeiPortifolio(APIView):
+#     authentication_classes = [TokenAuthentication]
+#     permission_classes = [IsAuthenticated]
 
-    def get(self, request, format=None):
-        servei = Servei.objets.get(servei_id=request.POST['servei_id'])
-        if servei:
-            return Response({'servei_id': servei.servei_id, 'name': servei.first_name + ' '+servei.last_name, 'image': servei.image}, status=status.HTTP_302_FOUND)
-        else:
-            return Response({'error': 'Does not exist'})
+#     def get(self, request, format=None):
+#         servei = Servei.objets.get(servei_id=request.POST['servei_id'])
+#         if servei:
+#             return Response({'servei_id': servei.servei_id, 'name': servei.first_name + ' '+servei.last_name, 'image': servei.image}, status=status.HTTP_302_FOUND)
+#         else:
+#             return Response({'error': 'Does not exist'})
 
 
 # Analytics
@@ -306,6 +279,41 @@ class ServeiPortifolio(APIView):
   Now, yesterday, last week(last 7 days),untill (uptil now),all means fetch all
   # remand now,yest,week,month
 """
+# TODO: Very Important required fixing
+# class Analytics(APIView):
+#     authentication_classes = [TokenAuthentication]
+#     permission_classes = [IsAuthenticated]
+
+#     def get(self, request, format=None):
+#         if request.GET['remand']:
+#             if request.GET['remand'] == 'now':
+#                 orders = Order.objects.filter(serveis__contains=[
+#                     request.GET['servei_id']], store_cluster__contains=[request.GET['store_key']], date_of_creation=datetime.date.today()).order_by('-time_of_creation')
+
+#             elif request.GET['remand'] == 'yest':
+#                 orders = Order.objects.filter(serveis__contains=[request.GET['servei_id']], store_cluster__contains=[
+#                                               request.GET['store_key']], date_of_creation=datetime.date.today()-datetime.timedelta(days=1)).order_by('-time_of_creation')
+#             elif request.GET['remand'] == 'week':
+#                 orders = Order.objects.filter(serveis__contains=[request.GET['servei_id']], store_cluster__contains=[request.GET['store_key']], date_of_creation__gte=datetime.date.today(
+#                 )-datetime.timedelta(days=7), date_of_creation__lte=datetime.datetime.today()).order_by('-date_of_creation')
+#             elif request.GET['remand'] == 'untill':
+#                 orders = Order.objects.filter(serveis__contains=[request.GET['servei_id']], store_cluster__contains=[request.GET['store_key']],
+#                                               date_of_creation__lte=datetime.datetime.today()).order_by('-date_of_creation')
+#             sell = 0
+#             cash = 0.0
+#             for order in orders:
+#                 # extract all final items sold by servei
+#                 servei_sellout = order.final_pair[request.GET['servei_id']]
+#                 for item in servei_sellout:
+#                     # Returns [servei_id,price,eff_price,amount]
+#                     packet = order.items_data[item]
+#                     cash += packet[-2] * packet[1]
+#                     sell += packet[-1]
+
+#             return Response({'servei_id': request.GET['servei_id'], 'cashin': cash, 'sell': sell, 'remand': request.GET['remand']}, status=status.HTTP_200_OK)
+#         else:
+#             return Response({}, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 class Analytics(APIView):
@@ -313,34 +321,14 @@ class Analytics(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, format=None):
-        if request.GET['remand']:
-            if request.GET['remand'] == 'now':
-                orders = Order.objects.filter(serveis__contains=[
-                    request.GET['servei_id']], store_cluster__contains=[request.GET['store_key']], date_of_creation=datetime.date.today()).order_by('-time_of_creation')
+        """
+          - Returns view on site, orders this month , money earned
+        """
+        order = Order.objects.filter(servei_list__contains=[request.GET['servei_id']])
 
-            elif request.GET['remand'] == 'yest':
-                orders = Order.objects.filter(serveis__contains=[request.GET['servei_id']], store_cluster__contains=[
-                                              request.GET['store_key']], date_of_creation=datetime.date.today()-datetime.timedelta(days=1)).order_by('-time_of_creation')
-            elif request.GET['remand'] == 'week':
-                orders = Order.objects.filter(serveis__contains=[request.GET['servei_id']], store_cluster__contains=[request.GET['store_key']], date_of_creation__gte=datetime.date.today(
-                )-datetime.timedelta(days=7), date_of_creation__lte=datetime.datetime.today()).order_by('-date_of_creation')
-            elif request.GET['remand'] == 'untill':
-                orders = Order.objects.filter(serveis__contains=[request.GET['servei_id']], store_cluster__contains=[request.GET['store_key']],
-                                              date_of_creation__lte=datetime.datetime.today()).order_by('-date_of_creation')
-            sell = 0
-            cash = 0.0
-            for order in orders:
-                # extract all final items sold by servei
-                servei_sellout = order.final_pair[request.GET['servei_id']]
-                for item in servei_sellout:
-                    # Returns [servei_id,price,eff_price,amount]
-                    packet = order.items_data[item]
-                    cash += packet[-2] * packet[1]
-                    sell += packet[-1]
 
-            return Response({'servei_id': request.GET['servei_id'], 'cashin': cash, 'sell': sell, 'remand': request.GET['remand']}, status=status.HTTP_200_OK)
-        else:
-            return Response({}, status=status.HTTP_400_BAD_REQUEST)
+
+
 
 
 class ItemExtractor(APIView):
@@ -356,22 +344,22 @@ class ItemExtractor(APIView):
             return Response({},status=status.HTTP_400_BAD_REQUEST)
     
 
-class StoreTeamWindow(APIView):
-    # authentication_classes = [TokenAuthentication]
-    permission_classes = [AllowAny]
+# class StoreTeamWindow(APIView):
+#     # authentication_classes = [TokenAuthentication]
+#     permission_classes = [AllowAny]
 
-    def get(self, request, format=None):
-        if Store.objects.get(store_key=request.GET['store_key']):
-            store = Store.objects.get(store_key=request.GET['store_key'])
-            team = []
-            for servei in store.employees:
-                team.append(StoreTeamSerializer(Servei.objects.get(servei_id=servei)))
-            if team is not []:
-                return Response(team, status=status.HTTP_200_OK)
-            else:
-                return Response({}, status=status.HTTP_404_NOT_FOUND)
-        else:
-            return Response({'error':"No Store Found"},status=status.HTTP_404_NOT_FOUND)
+#     def get(self, request, format=None):
+#         if Store.objects.get(store_key=request.GET['store_key']):
+#             store = Store.objects.get(store_key=request.GET['store_key'])
+#             team = []
+#             for servei in store.employees:
+#                 team.append(StoreTeamSerializer(Servei.objects.get(servei_id=servei)))
+#             if team is not []:
+#                 return Response(team, status=status.HTTP_200_OK)
+#             else:
+#                 return Response({}, status=status.HTTP_404_NOT_FOUND)
+#         else:
+#             return Response({'error':"No Store Found"},status=status.HTTP_404_NOT_FOUND)
 
 
 class CategorySelection(APIView):
@@ -601,65 +589,6 @@ class MeasureParamView(APIView):
             return Response(serial.data,status=status.HTTP_201_CREATED)
         else:
             return Response({},status=status.HTTP_400_BAD_REQUEST)
-
-
-
-
-
-
-class PortfolioManager(APIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, format=None):
-        if request.GET['reference'] == 'servei':
-            servei = Servei.objects.get(servei_id = request.GET['servei_id'])
-            if servei:
-                return Response({'email':servei.email,'phone_number':servei.phone_number,
-                                 'address':[servei.address_line_1,servei.address_line_2,servei.city,servei.state,servei.pin_code,servei.country],
-                                 'first_name':servei.first_name,'last_name':servei.last_name,'image':servei.image,
-                                 'coordinates':{'lat':position(servei.coordinates_id)[0],'long':position(servei.coordinates_id)[1]}},status=status.HTTP_200_OK)
-            else:
-                return Response({'error':'Servei Does Not Exist'},status=status.HTTP_404_NOT_FOUND)
-        elif request.GET['reference'] == 'store':
-            store = Store.objects.get(store_key = request.GET['store_key'])
-            if store:
-                return Response({'name':store.name,'email':store.contacts['email'],'phone_number':store.contacts['phone_number'],
-                                 'image':store.image,'address':store.address,'coordinates':{'lat':position(store.coordinates_id)[0],'long':position(store.coordinates_id)[1]}})
-            else:
-                return Response({'error':'Store Does Not Exist'},status=status.HTTP_404_NOT_FOUND)
-    
-    def post(self, request, format=None):
-        if request.POST['reference'] == 'servei':
-            servei = Servei.objects.get(servei_id=request.POST['servei_id'])
-            servei.first_name = request.POST['first_name']
-            servei.last_name = request.POST['last_name']
-            servei.email = request.POST['email']
-            servei.phone_number = request.POST['phone_number']
-            servei.address_line_1 = request.POST['address']['address_line_1']
-            servei.address_line_2 = request.POST['address']['address_line_2']
-            servei.city = request.POST['address']['city']
-            servei.state = request.POST['address']['state']
-            servei.pin_code = request.POST['address']['pin_code']
-            servei.country = request.POST['address']['country']
-            servei.image = request.POST['image']
-            set_positon(servei.coord_id,request.POST['coordinates'])
-            servei.save()
-            return Response({'email':servei.email,'phone_number':servei.phone_number,
-                                 'address':[servei.address_line_1,servei.address_line_2,servei.city,servei.state,servei.pin_code,servei.country,servei.country_code],
-                                 'first_name':servei.first_name,'last_name':servei.last_name,'image':servei.image,
-                                 'coordinates':{'lat':position(servei.coordinates_id)[0],'long':position(servei.coordinates_id)[1]}},status=status.HTTP_200_OK)
-        elif request.POST['reference'] == 'store':
-            store = Store.objects.get(store_key=request.POST['store_key'])
-            store.name = request.POST['name']
-            store.contacts['email'] = request.POST['email']
-            store.contacts['phone_number'] = request.POST['phone_number']
-            store.address = request.POST['address']
-            set_position(servei.coordinates_id,request.POST['position'])
-            store.image = request.POST['image']
-            return Response({'name':store.name,'email':store.contacts['email'],'phone_number':store.contacts['phone_number'],
-                                     'image':store.image,'address':store.address,'coordinates':{'lat':position(store.coordinates_id)[0],'long':position(store.coordinates_id)[1]}})
-
 
 
 class ServeiAvailablity(APIView):

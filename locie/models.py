@@ -51,7 +51,7 @@ class Account(AbstractBaseUser, PermissionsMixin):
     is_superuser = models.BooleanField(default=False)
     # servei,de,customer
     # 002 : Servei, 003: Pilot, 009: customer, 001: Locie
-    relation = models.CharField(max_length=20, default='', db_index=True)
+    relation = models.CharField(max_length=4, default='', db_index=True)
     # FCM Token of device
     # device_token = models.TextField(default='')
 
@@ -76,18 +76,12 @@ class Account(AbstractBaseUser, PermissionsMixin):
         
         account = None
         # Check account exist or not ? 
-        #TODO: Abandoned block needed to be removed
         try:
-            # print('in account try')
-            if request['relation'] == '009':
-                account = Account.objects.get(account_id = request['phone_number'])
-            elif request['relation'] == '002' or request['relation'] == '003':
+            if request['relation'] == '002' or request['relation'] == '003':
                 account = Account.objects.filter(relation = request['relation'],phone_number = request['phone_number']).first()
             if not account:
                 account_id = None
-                if request['relation'] == '009':
-                    account_id = request['phone_number']
-                elif request['relation'] == '002':
+                if request['relation'] == '002':
                     account_id = servei_id_creatore(city_code,request['aadhar'],request['phone_number'])
                 elif request['relation'] == '003':
                     account_id = pilot_id_creatore(city_code,request['aadhar'],request['phone_number'])
@@ -100,30 +94,22 @@ class Account(AbstractBaseUser, PermissionsMixin):
             # print('in account except')
             account_id = None
             # print(f"Inside except {request['phone_number']} : {account_id}") 
-            if request['relation'] == '009':
-                account_id = request['phone_number']
-            elif request['relation'] == '002':
+            if request['relation'] == '002':
                 account_id = servei_id_creatore(city_code,request['aadhar'],request['phone_number'])
             elif request['relation'] == '003':
                 account_id = pilot_id_creatore(city_code,request['aadhar'],request['phone_number'])
 
             # Creating New Account   
-           
             account = AccountManager().create_account(account_id,request['password'],request['relation'],request['phone_number'])
             # print(account)
             
         # print(account)
         keys = request.keys()
         if 'phone_token' in keys:
-            if request['relation'] == '009':
-                device = CustomerDevice.objects.get_or_create(customer_id = account.account_id)[0]
-                device.registration_id = request['phone_token']
-                device.save()
-            else:
-                device = MobileDevice.objects.get_or_create(locie_partner = account.account_id)[0]
-                device.registration_id = request['phone_token']
-                device.partnership = request['relation']
-                device.save()
+            device = MobileDevice.objects.get_or_create(locie_partner = account.account_id)[0]
+            device.registration_id = request['phone_token']
+            device.partnership = request['relation']
+            device.save()
             
         # Checking Coordinates exist or not
         coordinates = None
@@ -131,7 +117,8 @@ class Account(AbstractBaseUser, PermissionsMixin):
         # print(coordinates)
         
         coordinates.relation = request['relation']
-        coordinates.position = Point(float(request['lat']),float(request['long']))
+        if 'lat' in request.keys():
+            coordinates.position = Point(float(request['lat']),float(request['long']))
         coordinates.save()
                                            
         partner = None
@@ -169,26 +156,7 @@ class Account(AbstractBaseUser, PermissionsMixin):
                     partner.dob = datetime.datetime.strptime(request['dob'],'%d-%m-%Y')
             partner.save()
         
-        # Customer
-        elif request['relation'] == '009':
-            # print(account)
-            print(account.account_id)
-            partner = Customer.objects.get_or_create(customer_id = account.account_id,account=account)[0]
-            partner.account = account
-            partner.dob = datetime.datetime.strptime(request['dob'],'%d-%m-%Y')
-            
 
-            for key in keys:
-                if key == 'gender':
-                    partner.gender = request['gender']
-                elif key == 'address':
-                    partner.address = request['address']
-                elif key == 'lat':
-                    partner.coordinates_id = coordinates.coordinates_id
-                elif key == 'extras':
-                    partner.extras = request['extras']
-            partner.save()
-        
         # Pilot
         elif request['relation'] == '003':
             partner = Pilot.objects.get_or_create(pilot_id = account.account_id)[0]
@@ -252,24 +220,13 @@ class Item(models.Model):
     # Inspection required
     inspection = models.BooleanField(default=False)
 
-    # DeliveryType and PickType SSU.UDS.SDU
+    # DeliveryType SSU.UDS.SDU
     delivery_type = models.CharField(max_length=3, default='')
-    #SinglePick or MultiPick
-    pick_type = models.CharField(max_length=2, default='SP')
-
-    # Complete Time Complexity
-    # On-Time Complete or Post time Complete
-    #completeType = models.CharField(max_length=2, default='OT')
-    #position = gis_models.PointField(srid=4326, default=Point(0.00,0.00, srid=4326))
-
     # Category Reference
     prev_cat = models.CharField(max_length=30, default=True)
     father_cat = models.CharField(max_length=30, default=True)
-
-    # varinats -> JSON -> {'parameter','variant':[{value,price,image}]}
-    variants = JSONField(default=dict)
     required_desc = ArrayField(models.CharField(max_length=80),default=list,blank=True)
-    #postComplete = models.BooleanField(default=False)
+
     ratings = models.DecimalField(max_digits=3, decimal_places=2, default=0.00)
 
     # Id of default_item if associated with
@@ -317,12 +274,8 @@ class Servei(models.Model):
     pan_image = models.TextField(default='')
 
     store = models.CharField(max_length=50, default='', db_index=True)
-    employer = models.CharField(max_length=50, default='')
-    store_position = models.CharField(max_length=30, default='')
-
     # Date of joining and DOB
     date_join = models.DateField(default=timezone.now().date())
-    dob = models.DateField(default= timezone.now().date())
 
     # Flush out if servei is marked not-allowed and will not be shown
     allowed = models.BooleanField(default=True)
@@ -355,7 +308,6 @@ class Store(models.Model):
     # store Key
     store_key = models.CharField(
         max_length=50, db_index=True, default='', primary_key=True)
-    employees = ArrayField(models.CharField(max_length=30), default=list)
     owners = ArrayField(models.CharField(max_length=30), default=list)
 
     # Array of itemIds
@@ -364,7 +316,7 @@ class Store(models.Model):
 
     # When non-gst store is created
     creators_profession = models.CharField(max_length=30, default='')
-    creator_noob = models.BooleanField(default=False)
+
 
     # aadhar and pan  of creator or pan_token of creator
     # if has gst ask for pan too
@@ -380,21 +332,9 @@ class Store(models.Model):
 
     # Coordinates data
     coordinates_id = models.CharField(max_length=50,db_index=True,default='')
-
-    seek_employee = models.BooleanField(default=False)
-    seek_category = ArrayField(models.CharField(max_length=30), default=list)
-    
-
     # Use strftime to set this
     opening_time = models.TimeField(default = timezone.now().time())
     closing_time = models.TimeField(default = timezone.now().time())
-    twenty_four = models.BooleanField(default=False)
-
-    # SingleBody Organisation--> gst not required
-    store_type = models.CharField(max_length=2, default='SB')
-    gst_requested = models.BooleanField(default=False)
-    request_id = models.CharField(max_length=30, default='')
-    gstin = models.CharField(max_length=30, default='', unique=True)
 
     # Online for serving
     online = models.BooleanField(default=True)
@@ -405,148 +345,66 @@ class Store(models.Model):
     # allowed
     allowed = models.BooleanField(default=True)
 
-    # Portfolio
-    portfolio_updates = models.BooleanField(default=False)
-
-    store_link = models.CharField(max_length=255,default='',db_index=True)
-    store_template = models.TextField(default='')
+    store_link = models.CharField(max_length=255,default='')
     store_site_online = models.BooleanField(default=False)
     store_images = ArrayField(models.TextField(),default=list)
-
+    store_unmae = models.CharField(max_length=70,default='',db_index=True)
     # coordinates = CoordinateManager(coordinates_id)
 
     # Images
     image = models.TextField(default='')
     descriptions = JSONField(default=dict)
 
-# Official Request Model
-
-
-class OfficialRequest(models.Model):
-    reference_id = models.CharField(
-        max_length=30, default='', unique=True, primary_key=True)
-    # Reference Type servei,de,store,customer
-    reference_type = models.CharField(max_length=30, default='')
-
-    phone_number = models.CharField(max_length=30, default='')
-    permanent_address = models.TextField()
-    status = models.CharField(max_length=10, default='')
-    # gst or pan
-    request_type = models.CharField(max_length=30, default='')
-
-    # token of application
-    token = models.TextField(default='')
-
-    date_requested = models.DateField(default = timezone.now())
-    date_applied = models.DateField(default= timezone.now())
-
-    # applied or not
-    applied = models.BooleanField(default=False)
-    # dispatched requestee got or not
-    dispatched = models.BooleanField(default=False)
 
 
 class Order(models.Model):
+    """
+      - Order Model for Backend System
+      - servei cluster is a JSON with server_id as key, and cluster as value
+      - servei list for containing all servei id only for query
+      -  cluster is JSON inside contains items key with cluster of items 
+      -     -items cluster contains item_id, item_name,item_image,price,quantity,unit,measure
+      -  cluster also contains store_key,store_name,quantity(net),price,net_price and extra_charges,status =(DECLINE/WORKING/PENDING/SERVED/COMPLETED)
+      - accepted items contains item_id of those items who are selected to be deliverd
+      - picked items are item_id's who are picked by pilot, If all the items of a servei is picked than status of servei changes to SERVED
+      - pick list contains item id's who are ready to be picked up, Usefull in UDS when servei MARKS Completd it actually push item to pick list
+      - price the amount without any charges
+      - net price is the price customer will pay , which includes price and all extra charges applicable
+      - status defines current status of WORKING (CREATED/WORKING/FAILED/WAITING/FINISHED)
+      - time log contains time of every status
+      - pilot cluster contains pilot_id as key and details in json such as name,image, phone number as value
+      - customer stack contains address, name, phone number, coordinates as key value pair IMP. coordinates contains json lat and long
+      - payment id is the razorpay id
+      - payment stack contians all other responses of razorpay as key value pair
+      - And A usual
+    """
 
     order_id = models.CharField(
-        max_length=50, default='', unique=True, primary_key=True, db_index=True)
-
-    # Dict with ItemId as key and another Dict as value with serveiId,amount and price as another keys
-    # {'item_id':{'name':..,'servei_id':..,'quantity':...,'price':...,'effective_price':..,status:START/AMMO_PICKED/AMMO_DROPED,'unit':..,'measure:...}}
-    items_cluster = JSONField(default=dict)
-    # Servei as key and total price Locie to pay as value
-    # servei_id as key, effective_price servei will get is value --filled after acceptance motor will fill this
-    servei_price_cluster = JSONField(default=dict)
-
-    """
-    # servei_cluster: {
-    # 'servei_id':{
-    # 'items':[...],
-    # 'store_key':...,
-    # 'status': ACCEPTED/DECLINED/START (accepted & processing/ canceled),
-    # 'effective_price':...
-    # 'store_name':...,                                
-    # },
-    #  ......
-    #  }
-    # """
+        max_length=50, default='', unique=True, primary_key=True, db_index=True)  
     servei_cluster = JSONField(default=dict)
-
-    # For easing search of Orders asked to servei
-    servei_list = ArrayField(models.CharField(max_length=50), default=list)
-
-    # final servei--> those accepted
-    # {'serveri_id':{'items':[...],'store_key':...}...}
+    servei_list = ArrayField(models.CharField(max_length=70),default=list)
+    accepted_items = ArrayField(models.CharField(max_length=70),default=list)
+    picked_items = ArrayField(models.CharField(max_length=70),default=list)
+    pick_list = ArrayField(models.CharField(max_length=70),default=list)
     final_servei_cluster = JSONField(default=dict)
-
-    # final items --> items got accepted
-    #  {'item_id':{'quantity':...,'price':...,'effective_price':....,}}
-    final_items = JSONField(default=dict)
-
-    # rejected _items
-    rejected_items = ArrayField(models.CharField(max_length=30), default=list)
-
-    # Amount Customer to pay
     price = models.DecimalField(
         max_digits=7, decimal_places=2, default=0.00)
-    effective_price = models.DecimalField(
+    net_price = models.DecimalField(
         max_digits=7, decimal_places=2, default=0.00)
-
-    # FOR ORder Status management
-    # SEE  <TDMOS> in logic.md
-    #  -- global status
+    extra_charges = JSONField(default=dict)
     status = models.IntegerField(default=0000)
-
-    # {'status.name':time,....}
     time_log = JSONField(default=dict)
-
-    # DE Data first way and return way
-    pilot_id_first = models.CharField(max_length=50, default='', db_index=True)
-    pilot_id_return = models.CharField(
-        max_length=50, default='', db_index=True)
-
-    # Pilot details Name, Image and Phone Number
-    pilot_name = models.CharField(max_length=50, default='')
-    pilot_image = models.TextField(default='')
-    pilot_number = models.CharField(max_length=15, default='')
-
-    # Updates de position after de picked up the order and before completion
+    pilot_cluster = JSONField(default=dict)
     position = gis_models.PointField(
         srid=4326, default=Point(0.00, 0.00, srid=4326))
-    pilot_charge = models.DecimalField(
-        max_digits=7, decimal_places=2, default=0.00)
-
-    # Customer Id
     customer_id = models.CharField(max_length=15, db_index=True, default='')
-    # Customer address
-    customer_address = JSONField(default=dict)
-    # customer_name
-    customer_name = models.CharField(max_length=30, db_index=True, default='')
-    # customer_location
-    customer_coords = gis_models.PointField(
-        srid=4326, default=Point(0.00, 0.00, srid=4326))
-
-    # Date of order creation
-    date_of_creation = models.DateField(default = timezone.now())
-    # Time of order creation
-    time_of_creation = models.TimeField(default = timezone.now())
-
-    # creation = models.DateTimeField(auto_now=True)
-
-    # Time left for delivery
-    # time(datetime.datetime.now().hour,datetime.datetime.now().minute,datetime.datetime.now().seconds))
-    time_left = models.TimeField(default= timezone.now().time())
-
-    # Payment Methods and details
-    payment_method = models.CharField(max_length=30, default='', db_index=True)
-    payment_online = models.BooleanField(default=False)
-
-    # delivery_type i.e SSU, UDS or SDU
+    customer_stack = JSONField(default=dict)
+    date_time_creation = models.DateTimeField(default=timezone.now())
+    payment_complete = models.BooleanField(default=False)
+    payment_COD = models.BooleanField(default=True)
+    payment_id = models.TextField(default='')
+    payment_stack = JSONField(default=dict)
     delivery_type = models.CharField(max_length=3, default='')
-
-    
-    # Order Type i.e MultiPick or Single Pick (67 or 77)
-    order_type = models.IntegerField(default=00)
     cityCode = models.CharField(max_length=8, default='')
     otp = models.CharField(max_length=10, default='')
 
@@ -655,10 +513,8 @@ class Customer(models.Model):
     gender = models.CharField(max_length=10, default='')
     address = JSONField(default=dict)
     coordinates_id = models.CharField(max_length=50,db_index=True,default='')
-    account = models.OneToOneField(Account, on_delete=models.CASCADE)
     dob = models.DateField(default = timezone.now())
     extras = JSONField(default=dict)
-    # coordinates = CoordinateManager(coordinates_id)
 
 
 # ------------------DeliverExecutive-------------------------------------------------------------
@@ -707,6 +563,12 @@ class Rate(models.Model):
     categories = ArrayField(models.CharField(max_length=30), default=list)
     city_site = ArrayField(models.CharField(max_length=5), default=list)
 
+class ExtraCharges(models.Model):
+    #relation : 001 Locie 002 Servei 003 Pilot 009 Customer
+    relation = models.CharField(max_length=4,default='009')
+    categories = ArrayField(models.CharField(max_length=70),default=list)
+    extra_charges = JSONField(default=dict)
+
 
 class MeasureParam(models.Model):
     measure_id = models.CharField(
@@ -719,10 +581,10 @@ class MeasureParam(models.Model):
 
 class Cart(models.Model):
     cart_id = models.CharField(max_length=75,default='',primary_key=True)
-    clusters = ArrayField(JSONField(),default=list)
+    clusters = JSONField(default=dict)
     price = models.DecimalField(max_digits=7,decimal_places=2,default=00.00)
-    effective_price = models.DecimalField(max_digits=7,decimal_places=2,default=00.00)
-    total_quantity = models.DecimalField(max_digits=5,decimal_places=2,default=00.00)
+    net_price = models.DecimalField(max_digits=7,decimal_places=2,default=00.00)
+    quantity = models.DecimalField(max_digits=5,decimal_places=2,default=00.00)
     customer_id = models.CharField(max_length=70,db_index=True,default='')
 
 
@@ -734,5 +596,14 @@ class LocieStoreSite(models.Model):
     site = JSONField(default=dict)
     # {"page_name":{}}
     site_context = JSONField(default=dict)
+    # views of site
+    views_site = models.IntegerField(default=0)
+    monetized = models.BooleanField(default=True)
+    settlement_log = JSONField(default=dict)
+    last_settlement_date = models.DateTimeField(default=timezone.now())
+    online = models.BooleanField(default=True)
+    date_of_creation = models.DateField(default=timezone.now())
+
+
 
 

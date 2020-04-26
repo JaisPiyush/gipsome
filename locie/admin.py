@@ -1,6 +1,6 @@
 from django.contrib import admin
-from .models import Account,MobileDevice,Category,DefaultItems,Rate
-from .models import MeasureParam,Store,Item,Order,Customer,Pilot,Servei
+from .models import Account,MobileDevice,Category,DefaultItems,Rate,Order,Customer
+from .models import MeasureParam,Store,Item,Pilot,Servei
 from .models import CustomerDevice,Coordinates
 
 # Register your models here.

@@ -18,7 +18,6 @@ from .serializers import CityCodeSerializer
 from .tdmos import order_id_generator
 
 
-
 def variant_describe(item):
     """
       * Return string or dict
@@ -27,10 +26,9 @@ def variant_describe(item):
         False :- 'default'
     """
     if item.variants:
-        return {"parameter":item.variants['parameter'],"variants":[{"value":variant['value'],"price":variant['price'],"image":variant['image']} for variant in item.variants['variants']]}
+        return {"parameter": item.variants['parameter'], "variants": [{"value": variant['value'], "price":variant['price'], "image":variant['image']} for variant in item.variants['variants']]}
     else:
         return 'default'
-
 
 
 """
@@ -43,6 +41,7 @@ def variant_describe(item):
   * Item variants list packet : {parameter,variants:[{value,image,price}]}
 """
 
+
 class CustomerCategoryView(APIView):
     permission_classes = [AllowAny]
 
@@ -54,28 +53,31 @@ class CustomerCategoryView(APIView):
         # print(data.keys())
         prevCat = None
         if 'only-head' in data.keys():
-            categories = Category.objects.filter(Q(city_site__contains=[data['cityCode']]) & Q(cat_type = 'FC'))
-            categories = [{"cat_id":category.cat_id,"prev_cat":category.prev_cat,"name":category.name,"image":category.image,"cat_type":category.cat_type,"delivery_type":category.delivery_type}for category in categories]
-            
-        else:
-            categories = Category.objects.filter(Q(city_site__contains=[data['cityCode']]) & Q(prev_cat = data['cat_id']))
-            prevCat = Category.objects.get(cat_id=data['cat_id'])
-            categories = [{"cat_id":category.cat_id,"prev_cat":category.prev_cat,"name":category.name,"image":category.image,"cat_type":category.cat_type,"delivery_type":category.delivery_type}for category in categories]
-            items = Item.objects.filter(Q(prev_cat=data['cat_id']) & Q(cityCode = data['cityCode']) & Q(default_item_id = 'none'))
-            default_items = [{"item_id":item.item_id,"cat_id":item.cat_id,"measure":item.measure_param,"image":item.image,"unit":item.unit,"name":item.name} for item in DefaultItems.objects.filter(cat_id=data['cat_id'])]       
+            categories = Category.objects.filter(
+                Q(city_site__contains=[data['cityCode']]) & Q(cat_type='FC'))
+            categories = [{"cat_id": category.cat_id, "prev_cat": category.prev_cat, "name": category.name, "image": category.image,
+                           "cat_type": category.cat_type, "delivery_type": category.delivery_type}for category in categories]
 
+        else:
+            categories = Category.objects.filter(
+                Q(city_site__contains=[data['cityCode']]) & Q(prev_cat=data['cat_id']))
+            prevCat = Category.objects.get(cat_id=data['cat_id'])
+            categories = [{"cat_id": category.cat_id, "prev_cat": category.prev_cat, "name": category.name, "image": category.image,
+                           "cat_type": category.cat_type, "delivery_type": category.delivery_type}for category in categories]
+            items = Item.objects.filter(Q(prev_cat=data['cat_id']) & Q(
+                cityCode=data['cityCode']) & Q(default_item_id='none'))
+            default_items = [{"item_id": item.item_id, "cat_id": item.cat_id, "measure": item.measure_param, "image": item.image,
+                              "unit": item.unit, "name": item.name} for item in DefaultItems.objects.filter(cat_id=data['cat_id'])]
 
             if items:
-                items = [{"item_id":item.item_id,"prev_cat":item.prev_cat,"name":item.name,"images":item.images if hasattr(item,'images') else '',
-                         "store_key":item.store_key,"servei_id":item.servei_id,"price":item.price,"effective_price":item.effective_price,
-                         "unit":item.unit,"measure":item.measure_param,"store_name":Store.objects.get(store_key=item.store_key).store_name} for item in items]
-        if len(categories) > 0  or len(items) > 0 or len(default_items) > 0:
+                items = [{"item_id": item.item_id, "prev_cat": item.prev_cat, "name": item.name, "images": item.images if hasattr(item, 'images') else '',
+                          "store_key": item.store_key, "servei_id": item.servei_id, "price": item.price, "effective_price": item.effective_price,
+                          "unit": item.unit, "measure": item.measure_param, "store_name": Store.objects.get(store_key=item.store_key).store_name} for item in items]
+        if len(categories) > 0 or len(items) > 0 or len(default_items) > 0:
             del data
-            return Response({"categories":categories,"items":items,"prev_name":prevCat.name if prevCat is not None else "","default_items":default_items},status=status.HTTP_200_OK)
+            return Response({"categories": categories, "items": items, "prev_name": prevCat.name if prevCat is not None else "", "default_items": default_items}, status=status.HTTP_200_OK)
         else:
-            return Response({"prev_name":prevCat.name},status=status.HTTP_200_OK)
-
-
+            return Response({"prev_name": prevCat.name}, status=status.HTTP_200_OK)
 
 
 class CartOperation(APIView):
@@ -124,25 +126,22 @@ class CartOperation(APIView):
             cart.save()
             serialized = CartSerializer(cart)
         if serialized:
-            return Response(serialized.data,status=status.HTTP_201_CREATED)
+            return Response(serialized.data, status=status.HTTP_201_CREATED)
         else:
-            return Response(serialized.error_messages,status=status.HTTP_400_BAD_REQUEST)
-    
+            return Response(serialized.error_messages, status=status.HTTP_400_BAD_REQUEST)
 
     def get(self, requests, format=None):
         cart = Cart.objects.get(cart_id=requests.GET['cart_id'])
         serialized = CartSerializer(cart)
         if serialized:
-            return Response(serialized.data,status=status.HTTP_200_OK)
+            return Response(serialized.data, status=status.HTTP_200_OK)
         else:
-            return Response(serialized.error_messages,status=status.HTTP_400_BAD_REQUEST) #@return
+            # @return
+            return Response(serialized.error_messages, status=status.HTTP_400_BAD_REQUEST)
 
 
-
-
-
-class StoreView(APIView): #@class
-    permission_classes = [AllowAny] #list:
+class StoreView(APIView):  # @class
+    permission_classes = [AllowAny]  # list:
     """
      *Send Store data to Customer upon clicking item in ItemView or directly calling the store
      @param store_key,item_id
@@ -164,14 +163,12 @@ class StoreView(APIView): #@class
                 }]}                     
     """
 
-    def get(self, requests, format = None): #@function
-        data = requests.GET  #dict:
-        store = Store.objects.get(store_key = data['store_key'])
-        items = Item.objects.filter(store_key = data['store_key'])
-        serialized = StoreViewSerializer(store,items).data()
-        return Response(serialized,status=status.HTTP_200_OK) #@return
-
-
+    def get(self, requests, format=None):  # @function
+        data = requests.GET  # dict:
+        store = Store.objects.get(store_key=data['store_key'])
+        items = Item.objects.filter(store_key=data['store_key'])
+        serialized = StoreViewSerializer(store, items).data()
+        return Response(serialized, status=status.HTTP_200_OK)  # @return
 
 
 class CityCodeExtractor(APIView):
@@ -181,28 +178,27 @@ class CityCodeExtractor(APIView):
       TODO: Add functionality to add multiple pin_codes at same time
     """
 
-
-    def get(self,request,format=None):
+    def get(self, request, format=None):
         if 'cityCode' in request.GET.keys():
-            cityCode = CityCode.objects.get(cityCode = request.GET['cityCode'])
+            cityCode = CityCode.objects.get(cityCode=request.GET['cityCode'])
             serial = CityCodeSerializer(cityCode)
             if serial and cityCode:
-                return Response({'cityCode':serial.data},status=status.HTTP_200_OK)
+                return Response({'cityCode': serial.data}, status=status.HTTP_200_OK)
             else:
-                return Response({},status=status.HTTP_400_BAD_REQUEST)
+                return Response({}, status=status.HTTP_400_BAD_REQUEST)
         else:
-            cityCode = CityCode.objects.filter(pin_codes__contains = [request.GET['pin_code']]).first()
+            cityCode = CityCode.objects.filter(
+                pin_codes__contains=[request.GET['pin_code']]).first()
             serial = CityCodeSerializer(cityCode)
             if cityCode:
                 if 'all' in request.GET.keys():
-                    
-                    return Response({'cityCode':serial.data},status=status.HTTP_200_OK)
+
+                    return Response({'cityCode': serial.data}, status=status.HTTP_200_OK)
                 else:
-                    return Response({'cityCode':serial.data['cityCode'],'city':serial.data['city']},status=status.HTTP_200_OK)
+                    return Response({'cityCode': serial.data['cityCode'], 'city': serial.data['city']}, status=status.HTTP_200_OK)
 
             else:
-                return Response({},status=status.HTTP_400_BAD_REQUEST)
-
+                return Response({}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class DefaultItemPull(APIView):
@@ -212,13 +208,11 @@ class DefaultItemPull(APIView):
         data = request.GET
         default_item = DefaultItems.objects.get(item_id=data['item_id'])
         prev_cat = Category.objects.get(cat_id=default_item.cat_id)
-        items = [{"item_id":item.item_id,"prev_cat":item.prev_cat,"name":item.name,"images":item.images if hasattr(item,'images') else '',
-                         "store_key":item.store_key,"servei_id":item.servei_id,"price":item.price,"effective_price":item.effective_price,
-                         "unit":item.unit,"measure":item.measure_param,"store_name":Store.objects.get(store_key=item.store_key).store_name} for item in Item.objects.filter(Q(cityCode=data['cityCode']) & Q(default_item_id=default_item.item_id))]
-        if len(items) > 0 :
-            return Response({"items":items,"prev_name":default_item.name,"prev_image":default_item.image},status=status.HTTP_200_OK)
-
-
+        items = [{"item_id": item.item_id, "prev_cat": item.prev_cat, "name": item.name, "images": item.images if hasattr(item, 'images') else '',
+                  "store_key": item.store_key, "servei_id": item.servei_id, "price": item.price, "effective_price": item.effective_price,
+                  "unit": item.unit, "measure": item.measure_param, "store_name": Store.objects.get(store_key=item.store_key).store_name} for item in Item.objects.filter(Q(cityCode=data['cityCode']) & Q(default_item_id=default_item.item_id))]
+        if len(items) > 0:
+            return Response({"items": items, "prev_name": default_item.name, "prev_image": default_item.image}, status=status.HTTP_200_OK)
 
 
 class TemporaryOrderSystem(APIView):
@@ -241,17 +235,21 @@ class TemporaryOrderSystem(APIView):
 
     def post(self, request, format=None):
         data = request.GET
-        order = Order.objects.create(order_id=order_id_generator(data['customer_phone_number']))
+        order = Order.objects.create(
+            order_id=order_id_generator(data['customer_phone_number']))
         price = 0.0
         effective_price = 0.0
-        for cluster in  data['clusters']:
+        for cluster in data['clusters']:
             if cluster['servei_id'] in order.servei_cluster.keys():
-                order.servei_cluster[cluster['servei_id']]['items'].append(cluster['item_id'])
-                order.servei_cluster[cluster['servei_id']]['effective_price'] += cluster['effective_price']
+                order.servei_cluster[cluster['servei_id']
+                                     ]['items'].append(cluster['item_id'])
+                order.servei_cluster[cluster['servei_id']
+                                     ]['effective_price'] += cluster['effective_price']
             else:
-                order.servei_cluster[cluster['servei_id']] = {"itmes":[cluster['item_id']],"effective_price":cluster['effective_price']}
+                order.servei_cluster[cluster['servei_id']] = {
+                    "itmes": [cluster['item_id']], "effective_price": cluster['effective_price']}
             order.items_clutser[cluster['item_id']] = cluster
-            # TODO: less secure  Future Warning should use direct extraction of prices frfom ORM 
+            # TODO: less secure  Future Warning should use direct extraction of prices from ORM
             # Hijacking could lead to customer-wanted price
             price += cluster['price']
             effective_price += cluster['effective_price']
@@ -261,8 +259,71 @@ class TemporaryOrderSystem(APIView):
         order.price = price
         order.effective_price = effective_price
         order.save()
-        return Response({"order_id":order.order_id},status=status.HTTP_201_CREATED)
+        return Response({"order_id": order.order_id}, status=status.HTTP_201_CREATED)
 
 
+class CustomerLogin(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, format=None):
+        customer = Customer.objects.filter(
+            customer_id=request.GET['customer_id']).first()
+        if customer:
+            account = Account.objects.get(account_id=customer.customer_id)
+            if account.check_password(request.GET['password']):
+                token = Token.objects.get(user=account)
+                return Response({'token': token.key}, status=status.HTTP_202_ACCEPTED)
+            else:
+                return Response({}, status=status.HTTP_401_UNAUTHORIZED)
+        else:
+            return Response({}, status=status.HTTP_403_FORBIDDEN)
 
 
+class CustomerAddmission(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, format=None):
+        data = request.POST
+        customer = None
+        created = False
+        try:
+            customer = Customer.objects.get(customer_id=data['customer_id'])
+            return Response({'msg': 'Account Already exist'}, status=status.HTTP_403_FORBIDDEN)
+        except:
+            created = True
+        if created:
+            cityCode = CityCode.objects.filter(pin_codes__contains= [data['pin_code']])
+            if cityCode:
+                cityCode = cityCode.first()
+                account = Account.objects.create(
+                    account_id=data['customer_id'],
+                    relation='009',
+                    phone_number=data['customer_id'],
+                    is_staff=False, is_superuser=False
+                )
+                account.set_password(data['password'])
+                account.save()
+                print(account.account_id)
+                
+                if account:
+                    token = Token.objects.create(user=account)
+                    customer = Customer.objects.create(customer_id=data['customer_id'])
+                    coordinates = Coordinates.objects.get_or_create(
+                        coordinates_id=account.account_id)[0]
+                    for key in data.keys():
+                        if key == 'gender':
+                            customer.gender = request['gender']
+                        elif key == 'address':
+                            customer.address = request['address']
+                        elif key == 'lat':
+                            customer.coordinates_id = coordinates.coordinates_id
+                        elif key == 'extras':
+                            customer.extras = request['extras']
+                        elif key == 'dob':
+                            customer.dob = datetime.datetime.strptime(
+                                request['dob'], '%d-%m-%Y')
+                    customer.save()
+
+                    return Response({'token': token.key, }, status=status.HTTP_202_ACCEPTED)
+            else:
+                return Response({}, status=status.HTTP_406_NOT_ACCEPTABLE)

@@ -1,7 +1,7 @@
 from enum import Enum
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from .models import Order, Account, Servei, Item, Customer, Pilot, Store,MobileDevice,CustomerDevice,Coordinates
+from .models import Order, Account, Servei, Item, Customer, Pilot, Store, MobileDevice, CustomerDevice, Coordinates, Cart, Rate,ExtraCharges
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.authentication import TokenAuthentication
@@ -20,59 +20,61 @@ import json
 from .tasks import shared_task
 
 
-
 def position(coordinates_id):
-    return Coordinates.objects.get(coordinates_id = coordinates_id).position
+    return Coordinates.objects.get(coordinates_id=coordinates_id).position
 
-def set_positon(coord_id,data:dict):
-    coord = Coordinates.objects.get(coordinates_id = coord_id)
-    coord.position = Point(float(data['lat']),float(data['long']))
+
+def set_positon(coord_id, data: dict):
+    coord = Coordinates.objects.get(coordinates_id=coord_id)
+    coord.position = Point(float(data['lat']), float(data['long']))
     coord.save()
 
 
 # Celery Async task to wait for 180s
 @shared_task
-def wait(order_id,time=180):
+def wait(order_id, time=180):
     sleep(time)
     print('Started Reactore')
-    TDMOSystem(order_id).reactor()
+    TDMOSystem(Order.objects.get(order_id=order_id)).reactor()
 
 # Celery Task to start ignition
 @shared_task
 def trigger(order_id):
-    TDMOSystem(order_id).ignite()
+    TDMOSystem(Order.objects.get(order_id=order_id)).ignite()
 
 # Celery task to finish order
 @shared_task
-def kill_order(order_id):
+def kill_order(order_id,force=False,reason=None):
     print('Started Killing')
-    TDMOSystem(order_id).kill()
+    TDMOSystem(Order.objects.get(order_id=order_id)).kill(force=force,reason=reason)
+
 
 @shared_task
 def ssu_start(order_id):
-    TDMOSystem(order_id).ssu_service()
+    TDMOSystem(Order.objects.get(order_id=order_id)).ssu_service()
+
 
 @shared_task
 def uds_start(order_id):
-    TDMOSystem(order_id).uds_service()
+    TDMOSystem(Order.objects.get(order_id=order_id)).uds_service()
 
 
 class OtpPulse:
 
     def __init__(self):
-       
+
         self.data = self.random_with_n_digits(7)
 
     def __str__(self):
         return repr(self.data)
 
-    def random_with_n_digits(self, n:int):
+    def random_with_n_digits(self, n: int):
         range_start = 10**(n-1)
         range_end = (10**n)-1
         return randint(range_start, range_end)
 
 
-def order_id_generator(data:str):
+def order_id_generator(data: str):
     # UP53$8499ODRTIME
     customer = [str(cusp) for cusp in data]
     print(customer)
@@ -82,76 +84,25 @@ def order_id_generator(data:str):
     return 'UP53@{c}ODR{t}'.format(c=customer, t=time)
 
 
+CREATED = 0
+WORKING = 7
+FAILED = 9
+WORKING = 5
+FINISHED = 1
+DECLINED = 13
+PENDING = 11
+SERVED = 10
+CREATE = 39
+CANCEL = 69
+COMPLETED = 49
 
-
-START = 0000
-# Process
-MISSION_SUCCESSFUL = 103904  # SECOP
-MISSION_REQUESTED = 2090  # 20** + **90 # ORDER IS CREATED AND NOTIFICATIONS ARE SENT
-
-# Order in Processing
-MISSION_PROCESSING = 2002  # ORDER IS UNDER SERVEI's (GLOBAL STATUS)
-# Mission Procedded
-MISSION_SERVED = 2001  # ALL SERVEI COMPLETED JOB (GLOBAL STATUS)
-# Mission Failed
-MISSION_FAILED = 409301
-
-MISSION_CANCELLED = 4091990 # User Cancelled the order
-
-# Item Related
-AMMO_PACKED = 6392  # ITEM STATUS --> ACCEPTED
-AMMO_DROPED = 2936  # ITEM STATUS --> DECLINED
-AMMO_PICKED = 6492 # Pilto Picked Item
-JET_ON_THE_WAY = 1990  # DELIVERY FOUND
-# MARKED IN-CASE ORDER IS DROPED BUT CUSTOMER CLAIMED FOR REFUND-RETURN
-MISSION_ACCOMPLISHED = 9002
-
-# Failure
-SOLDIER_DECLINED = 404  # SERVEI DECLINED
-PILOT_NOT_FOUND = 408  # PILOT IS NOT FOUND
-VICTIM_REFUSED = 2801  # CUSTOMER CANCELED
-TECHNICAL_FAILURE = 7000  # TECHNICAL FAILURE
-# SERVEI ORIENTED
-SOLDIER_SERVED = 4037
-SOLDIER_COMPLETED = 8038
-# Sucess
-# PILOT_FOUND = 2705
-SOLDIER_ACCEPTED = 2009
-
-# SSU-SP
-PILOT_LOADED_AMMO = 2708  # SSU ITEMS ARE PICKED ALL
-PILOT_DROPED_AMMO = 2711  # SSU ITEMS ARE DROPED ALL
-
-  
-PILOT_START_LOADING = 27081 # Pilot started loading used as action
-PILOT_FINISHED_LOADING = 27082 
-
-# SDU
-PILOT_BOARDED_SOLDIER = 2808
-PILOT_DROPED_SOLDIER = 2811
-PILOT_BOARDED_FALLBACK_SOLDIER = 2008
-PILOT_DROPED_FALLBACK_SOLDIER = 2011
-
-# UDS
-PILOT_TOOK_AMMO_VICTIM = 108  # SUBJECT PICKED FROM CUSTOMER
-PILOT_DROPED_AMMO_VICTIM = 904  # SUBJECT DROPED TO CUSTOMER
-
-
-
-
-
-
-
-ORDER_CREATE = 1000  # CREATE ORDER
-ORDER_UPDATE = 1001  # UPDATE ORDER
-ORDER_CANCEL = 1002  # CANCEL ORDER
-ORDER_RETURN = 1003  # RETURN ORDER
-ORDER_SOLDIER_ACCEPT = 2019  # SERVEI ACCEPT ORDER
-ORDER_SOLDIER_DECLINE = 2020  # SERVEI DECLINE ORDER
-ORDER_CANCEL_PARTIAL = 125  # CUSTOMER CANCELLED FEW ITEMS
-ORDER_CANCEL_COMPLETE = 521  # CUSTOMER CANCELLED EVERYTHING
-ORDER_COMPLETE = 1235
-    
+def cartilage(cart, cluster):
+    if cluster['item_id'] in cart.clusters.keys():
+        cart.clusters.pop(cluster['item_id'])
+        cart.quanity -= cluster['quantity']
+        cart.price -= cluster['price']
+        if len(cart.clusters.keys()) == 0:
+            cart.delete()
 
 
 class CustomerOrderInterface(APIView):
@@ -162,85 +113,72 @@ class CustomerOrderInterface(APIView):
     - Customers Item View will add variant it's price and effective price of variant directly
     - View for Order and Customer Interaction
     - Creation action = 'create-order
-    - customer - {cart_id,clusters:[{'item_id','servei_id','store_key','quantity','price',effective_price','unit','measure','name','image','variant':'default'}],
-                  cityCode','customer_id','address','customer_coords','pilot_charge,'name','delivery_type','delivery_type'}
-    - Cancel - action -> cancel
-               STATUS = CANCELLED
-               NOTIFY ALL SERVEIS
-               MARK EVERY SERVEI STATUS SOLDIER_DECLINED
-                  
-
+    - Data packet contains clusters,customer_stack,cityCode,payment_stack,cart_id,delivery_type,action,price,extra_charges
+    - clusters is a JSON with item_id of cluster as key and cluster as value
+    - cluster contains item_id,name,image,price,quantity,unit,measure,servei_id,store_key,store_name,prev_cat,cityCode
+    - simultaneously delete item from cart if cart key is given
+    - check every time if cluster length gets 0, then delete the cart
     """
 
     def post(self, request, format=None):
         data = json.loads(request.body)
-        print(ORDER_CREATE)
-        if int(str(data['action'])) == ORDER_CREATE:
-            order = Order.objects.create(
-                order_id=order_id_generator(data['customer_id']))
-            order.status = START
-            order.time_log[START] = datetime.now(
-                timezone.utc).strftime('%d-%m-%Y.%H:%M:%S')
+        if(data['action'] == CREATE):
+            order = Order.objects.create(order_id=order_id_generator(
+                data['customer_stack']['customer_id']))
             order.delivery_type = data['delivery_type']
-            order.customer_id = data['customer_id']
-            order.customer_address = data['address']
-            # order.customer_coords = Point(data['coordinates']['lat'],data['coordinates']['long'])
-            order.customer_name = data['name']
-            order.price = data['price']
-            order.cityCode = data['cityCode']
-            order.pilot_charge = data['pilot_charge']
-            order.payment_method = data['payment_method']
-            # json boolens are true/false whereas Python booleans are True/False
-            order.payment_online = True if data['payment_online'] == 1 else False
-            if 'customer_coords' in data.keys():
-                order.customer_coords = Point(data['customer_coords']['lat'], data['customer_coords']['long'], srid=4326)
-            for cluster in data['clusters']:
-                if cluster['servei_id'] in order.servei_cluster.keys():
-                    order.servei_cluster[cluster['servei_id']
-                                         ]['items'].append(cluster['items_id'])
-                    order.servei_cluster[cluster['servei_id']
-                                         ]['effective_price'] += cluster['effective_price']
+            cart = None
+            if 'cart' in data.keys():
+                cart = Cart.objects.get(cart_id=data['cart_id'])
+            quantity = 0.0
+            price = 0.0
+            net_price = 0.0
+            clusters = data['clusters']
+            tdmos = TDMOSystem(order)
+            for item_id in clusters.keys():
+                servei_id = clusters[item_id]['servei_id']
+                if servei_id in order.servei_cluster.keys():
+                    order.servei_cluster[servei_id]['price'] += clusters[item_id]['price']
+                    order.servei_cluster[servei_id]['quantity'] += clusters[item_id]['quanity']
+                    order.servei_cluster[servei_id]['items'].append(
+                        clusters[item_id])
+                    tdmos.charge_calculator(clusters[item_id],servei_id,final=False)
+                    if cart:
+                        cartilage(cart, clusters[item_id])
                 else:
-                    clumps = {}
-                    clumps['items'] = [cluster['item_id']]
-                    clumps['store_key'] = cluster['store_key']
-                    clumps['status'] = START
-                    clumps['effective_price'] = cluster['effective_price']
-                    order.servei_cluster[cluster['servei_id']] = clumps
-                    order.servei_list.append(cluster['servei_id'])
-
-                if not cluster['item_id'] in  order.items_cluster.keys():
-                    clumps = {}
-                    clumps['servei_id'] = cluster['servei_id']
-                    clumps['quantity'] = cluster['quantity']
-                    clumps['effective_price'] = cluster['effective_price']
-                    clumps['price'] = cluster['price']
-                    # clumps['effective_price'] = cluster['effective_price']
-                    clumps['unit'] = cluster['unit']
-                    clumps['measure'] = cluster['measure']
-                    clumps['name'] = cluster['name']
-                    clumps['image'] = cluster['image']
-                    if 'variant' in cluster.keys() and cluster['variant'] is not 'default':
-                        clumps['variant'] = cluster['variant']
-                    order.items_cluster[cluster['item_id']] = clumps
-
+                    order.servei_list.append(servei_id)
+                    order.servei_cluster[servei_id] = {"items": [clusters[item_id]], "price": clusters[item_id]['price'], "quantity": clusters[item_id]['quantity'],
+                                                       "store_key": clusters[item_id]['store_key'], "store_name": clusters[item_id]['store_name'],
+                                                       "net_price": 0.0, "extra_charges": {'platform_delivery':0.0}, "status": PENDING}
+                    tdmos.charge_calculator(clusters[item_id],servei_id,final=False)
+                    if cart:
+                        cartilage(cart, clusters[item_id])
+            order.customer_stack = data['customer_stack']
+            order.payment_stack = data['payment_stack']
+            if data['payment_stack']['method'] != 'COD':
+                order.payment_COD = True
+            else:
+                order.payment_COD = False
+            if 'payment_id' in data['payment_stack'].keys():
+                order.payment_id = data['payment_stack']['payment_id']
+            if 'cityCode' in data.keys():
+                order.cityCode = data['cityCode']
+            order.price = data['price']
+            order.extra_cahrges = data['extra_charges']
+            order.net_price = data['price'] + \
+                sum(data['extra_charges'].values())
+            tdmos.status_setter(CREATED)
             order.save()
-            #TODO: Clear Cart Database with cart_id
             trigger.delay(order.order_id)
-            
             return Response({'order_id': order.order_id, 'status': order.status}, status=status.HTTP_201_CREATED)
-        elif int(data['action']) == ORDER_CANCEL:
+        elif int(data['action']) == CANCEL:
             order = Order.objects.get(order_id=data['order_id'])
-            order.status = MISSION_FAILED
-            order.save()
-            kill_order.delay(order.order_id)
-            # TDMOSystem(order.order_id).kill()
-            return Response({'order_id': order.order_id, 'status': order.status}, status=status.HTTP_200_OK)
+            if order.delivery_type == 'SSU':
+                kill_order.delay(order.order_id)
+                return Response({'order_id': order.order_id, 'status': FAILED}, status=status.HTTP_200_OK)
+            elif order.delivery_type == 'UDS':
+                return Response({'order_id': order.order_id, 'status': order.status,'error':'Un killable'}, status=status.HTTP_200_OK)                
         else:
-            print(data['action'])
             return Response({}, status=status.HTTP_400_BAD_REQUEST)
-
-
 
 
 class OrderServeiInterface(APIView):
@@ -250,371 +188,231 @@ class OrderServeiInterface(APIView):
     def post(self, request, format=None):
         # Action Accept the order, decline the order, mark complete
         data = json.loads(request.body)
-        if int(data['action']) == ORDER_SOLDIER_DECLINE:
+        if int(data['action']) == DECLINED:
             # Decline all
             order = Order.objects.get(order_id=data['order_id'])
             order.servei_cluster[data['servei_id']
-                                 ]['status'] = SOLDIER_DECLINED
+                                 ]['status'] = DECLINED
             order.save()
             kill_order.delay(order.order_id)
-            return Response({'order_id': order.order_id, 'status': order.status,'servei_status':SOLDIER_DECLINED}, status=status.HTTP_200_OK)
-        
-        elif int(data['action']) == ORDER_SOLDIER_ACCEPT:
-            # Servei wil send packets like {order_id,items} --> items will contain items accepted
+            return Response({'order_id': order.order_id, 'status': order.status, 'servei_status': DECLINED}, status=status.HTTP_200_OK)
+
+        elif int(data['action']) == WORKING:
+            # Servei wil send packets like {order_id,items:[item_id]} --> items will contain items accepted
             order = Order.objects.get(order_id=data['order_id'])
             order.servei_cluster[data['servei_id']
-                                 ]['status'] = SOLDIER_ACCEPTED
-            servei_effective_price = 0.0
-            total_quantity = 0
-            servei_items = []
-            for item_id in data['items']:
-                order.items_cluster[item_id]['status'] = AMMO_PACKED
-                servei_effective_price += order.items_cluster[item_id]['effective_price']
-                total_quantity += order.items_cluster[item_id]['quantity']
-                servei_items.append(order.items_cluster[item_id])
-            order.servei_cluster[data['servei_id']
-                                 ]['quantity'] = total_quantity
-            order.servei_cluster[data['servei_id']
-                                 ]['effective_price'] = servei_effective_price
+                                 ]['status'] = WORKING
+            servei_price = 0.0
+            total_quantity = 0.0
+            order.servei_cluster[data['servei_id']]['status'] = WORKING
+            order.final_servei_cluster[data['servei_id']] = order.servei_cluster[data['servei_id']]
+            final_items = []
+            tdmos = TDMOSystem(order)
+            for item in order.servei_cluster[data['servei_id']]['items']:
+                if item['item_id'] in data['items']:
+                    final_items.append(item)
+                    servei_price += item['price']
+                    total_quantity += item['quantity']
+                    tdmos.charge_calculator(item,data['servei_id'],final=True)
+            order.final_servei_cluster[data['servei_id']]['items'] = final_items
+            del final_items
+            order.final_servei_cluster[data['servei_id']]['price'] = servei_price
+            order.final_servei_cluster[data['servei_id']]['quantity'] = total_quantity
+
+            # TDMOSystem(order).charge_calculator(order.servei_cluster[data['servei_id']])
             if order.otp == '':
                 order.otp = str(OtpPulse())
             order.save()
-            # Starting TDMOS
             trigger.delay(order.order_id)
-            # TDMOSystem(order.order_id).ignite()
-            return Response({'order_id': order.order_id, 'status': MISSION_PROCESSING, 'servei_status':SOLDIER_ACCEPTED,'cluster': servei_items, 'quantity': total_quantity, 'effective_price': servei_effective_price, 'otp': order.otp},status=status.HTTP_200_OK)
+            return Response({'order_id': order.order_id, 'status': order.status, 'servei_status': WORKING,
+                             'cluster': order.final_servei_cluster[data['servei_id']]['items'], 'quantity': total_quantity,
+                             'effective_price': servei_price, 'otp': order.otp,
+                             "extra_charges": order.final_servei_cluster[data['servei_id']]['extra_charges'],
+                             "net_price": order.final_servei_cluster[data['servei_id']]['net_price']}, status=status.HTTP_200_OK)
 
-        elif int(data['action']) == ORDER_COMPLETE:
-            # FOR UDS //SDU IN FUTURE
-            # WILL FIRE UDS_SERVICE IF ALL SERVEI COMPLETED
-            # WILL ADD SDU IN FUTURE
+        elif int(data['action']) == COMPLETED:
             order = Order.objects.get(order_id=data['order_id'])
             order.final_servei_cluster[data['servei_id']
-                                       ]['status'] = SOLDIER_COMPLETED
+                                       ]['status'] = COMPLETED
+            order.pick_list = [cluster['item_id'] for cluster in order.final_servei_cluster[data['servei_id']]['items']]
             order.save()
-            if all([servei['status'] == SOLDIER_COMPLETED for servei in order.final_servei_cluster.values()]) and order.delivery_type == 'UDS':
+            if len(order.pick_list) == len([servei['items'] for servei in order.final_servei_cluster.values()]):
                 # Second Round Starts Here
                 uds_start.delay(order.order_id)
-                ...
+                
+                order.save()
                 # TDMOSystem(order.order_id).uds_service()
-            return Response({'order_id': order.order_id, 'servei_status': SOLDIER_COMPLETED, 'otp': order.otp,'status':order.status}, status=status.HTTP_200_OK)
-        
-        
-
-
-
-
-
-class OrderPilotInterface(APIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-#TODO:
-    def post(self, requeset, format=None):
-        data = json.loads(requeset.body)
-        # action item_picked, item_dropped
-        if int(data['action']) == PILOT_START_LOADING:
-            
-            order = Order.objects.get(order_id=data['order_id'])
-           
-            order.position = Point(data['coordinates']['lat'],data['coordinates']['long'])
-            if order.delivery_type == 'SSU':
-                
-                order.final_servei_cluster[data['servei_id']]['status'] = SOLDIER_SERVED
-                for item_id in order.final_servei_cluster[data['servei_id']]['items']:
-                    order.final_items[item_id]['status'] = AMMO_PICKED
-            elif order.delivery_type =='UDS':
-                #pilot sends item_ids in a list as items
-                for item_id in data['items']:
-                    order.final_items[item_id]['status'] = AMMO_PICKED
-                    order.save()
-            
-            if all([servei['status']==SOLDIER_SERVED for servei in order.final_servei_cluster.values()]):
-                order.status = PILOT_FINISHED_LOADING
-                order.save()
-                return Response({'order_id':order.order_id,'status':order.status,'collected':'all','delivery_type':order.delivery_type},status=status.HTTP_200_OK)
-            return Response({'order_id':order.order_id,'status':order.status,'delivery_type':order.delivery_type,'collected':[item_id for item_id in order.final_items.keys() if order.final_items[item_id]['status']==AMMO_PICKED]})
-
-            
-                
-        
-
-        # Pilot Dropped Subjects to Serveis
-        elif int(data['action']) == PILOT_DROPED_AMMO:
-            order = Order.objects.get(order_id=data['order_id'])
-            for item_id in order.final_items.keys():
-                order.final_items[item_id]['status'] = AMMO_PACKED
-            order.save()
-            if all([item['status'] ==  AMMO_PACKED for item in order.final_items.values() ]):
-                device = CustomerDevice.objects.get(customer_id = order.customer_id)
-
-                device.send_message('Your Order is in Service','You Orders have reached their destinations',
-                data= {'click_action':'FLUTTER_NOTIFICATION_CLICK','data':{'type':'order-update','order_id':order.order_id,
-                'status':order.status}},api_key=API_KEY)
-                # RPMNSystem(order.customer_id,'009').telegram(title='Your Order is in Service',body='Orders have reached their destination, they will see you soon :)',data={'type':'order-update','order_id':order.order_id,'status':order.status})
-                return Response({'order_id':order.order_id,'status':MISSION_SUCCESSFUL},status=status.HTTP_200_OK)
-            return Response({'order_id':order.order_id,'status':order.status},status=status.HTTP_200_OK)
-
-
-                
-
-
-
-
-        # Finally dropped Order to Customer
-        elif int(data['action']) == PILOT_DROPED_AMMO_VICTIM:
-            order = Order.objects.get(order_id=data['order_id'])
-            
-            if order.delivery_type == 'UDS':
-                order.status = MISSION_SUCCESSFUL
-                device = CustomerDevice.objects.get(customer_id=order.customer_id)
-
-                device.send_message('Order Completed','Your Order has been delivered',
-                                    data={'click_action':'FLUTTER_NOTIFICATION_CLICK',
-                                    'data':{'type':'order-complete','order_id':order.order_id}},api_key=API_KEY)
-                
-                # RPMNSystem(order.customer_id,'009').telegram(title='Order Completed',body='Your Order has been delivered',data={'type':'order-complete','order_id':order.order_id})
-                order.save()
-                
-            elif order.delivery_type == 'SSU':
-                order.status = MISSION_SUCCESSFUL
-                device = CustomerDevice.objects.get(customer_id=order.customer_id)
-
-                device.send_message('Order Completed','Your Order has been Delivered',data={'click_action':'FLUTTER_NOTIFICATION_CLICK',
-                                    'data':{'type':'order-complete','order_id':order.order_id}},api_key=API_KEY)
-
-                # RPMNSystem(order.customer_id,'009').telegram(title='Order Completed',body='Your Order has been delivered',data={'type':'order-complete','order_id':order.order_id})
-                order.save()
-            return Response({'order_id':order.order_id,'status':MISSION_SUCCESSFUL},status=status.HTTP_200_OK)
-            
-# TODO: Pilot Charge Calculation View
-
+            return Response({'order_id': order.order_id, 'servei_status': COMPLETED, 'otp': order.otp, 'status': order.status}, status=status.HTTP_200_OK)
 
 
 class TDMOSystem:
 
-    def __init__(self, order_id:str):
-        self.order_id = order_id
+    def __init__(self, order):
         self.order = Order.objects.get(order_id=self.order_id)
+
+    def status_setter(self, status):
+        self.order.status = status
+        self.order.time_log[status] = timezone.now()
+        self.order.save()
+
+    def charge_calculator(self, cluster,servei_id,final=False):
+        # TODO: Implementation takes in icluster 
+        # Takes out the rate and extra_charges applicable per_item, and set the extra_charges using servei_id from item and self.order
+        # Takes rate of each item, price*rate*quantity/100 value of item in order per servei
+        # principal_portion = value/price(Total)*100
+        # if final: order.final_servei_cluster[servei_id]['extra_charges']['value'] += principal_protion
+        # else order.servei_cluster[servei_id]['extra_charges']['value'] += principal_protion
+        # net_price = price + sum([price*value/100 for value in servei_cluster[extra_charges].values()])
+        # extra_charges = {}
+        servei_cluster = None
+        if final:
+            servei_cluster = self.order.final_servei_cluster[servei_id]
+        else:
+            servei_cluster = self.order.servei_cluster[servei_id]
+        item = Item.objects.get(item_id=cluster['item_id'])
+        rate = Rate.object.filter(categories__contains = [item.prev_cat])
+        servei_cluster['extra_charges']['platform_delivery'] += (item.price * rate.rate * cluster['quantity'] /100)* 100 /servei_cluster['price']
+        servei_cluster['net_price'] = servei_cluster['price'] + sum([servei_cluster['price'] * value/100 for value in servei_cluster['extra_charges'].values()])
+        self.order.save()
 
     def ignite(self):
-        print("trigger")
-        # order = Order.objects.get(order_id=self.order_id)
-        order = self.order
-        for servei in order.servei_cluster.keys():
-            servei_item_cluster = []
-            total_quantity = 0
-            servei_effective_price = 0.0
-            for item_id in order.servei_cluster[servei]['items']:
-                total_quantity += order.items_cluster[item_id]['quantity']
-                servei_effective_price += order.items_cluster[item_id]['effective_price']
-                # Setting all item_id into cluster
-                servei_item_cluster.append(order.items_cluster[item_id])
-            # Notifying Servei
-            device = MobileDevice.objects.get(locie_partner = servei)
-            device.send_message('New Order','New Order has arrived for you',data = {'click_action': 'FLUTTER_NOTIFICATION_CLICK',
-                                'data':{'type': 'new-order', 'order_id': order.order_id, 'cluster': servei_item_cluster,
-                                 'total_quantity': total_quantity, 'effective_price': servei_effective_price,
-                                 'status':self.order.status,'delivery_type':self.order.delivery_type}},api_key=API_KEY)
-            # RPMNSystem(servei, '002').telegram(title='New Order', body='New Order has arrived for you', data={
-            #     'type': 'new-order', 'order_id': order.order_id, 'cluster': servei_item_cluster, 'total_quantity': total_quantity, 'effective_price': servei_effective_price,'status':self.order.status,'delivery_type':self.order.delivery_type})
-
-        # Take pause for 3 minutes --> 180 seconds Celery to schedule to execute this task 3 minutes later
-        # time.sleep(180)
-        # self.reactor()
-        wait.delay(self.order_id,time=180)
-        
-
+        """
+         - Ignition starts just after the creation
+         - It will call all the servei's and notify them about their order
+         - Then start reactore through celery
+        """
+        if self.order.status == CREATED:
+            for servei_id in self.order.servei_cluster.keys():
+                device = MobileDevice.objects.get(locie_partner=servei_id)
+                device.send_message('New Order', 'New Order has arrived for you', data={'click_action': 'FLUTTER_NOTIFICATION_CLICK',
+                                                                                    'data': {'type': 'new-order', 'order_id': self.order.order_id, 
+                                                                                    'cluster': [item['item_id'] for item in self.order.servei_cluster[servei_id]['items']],
+                                                                                    'total_quantity':self.order.servei_cluster[servei_id]['quantity'], 'net_price': self.order.servei_cluster['net_price'],
+                                                                                    'status': self.order.status, 'delivery_type': self.order.delivery_type}}, api_key=API_KEY)            
+            wait.delay(self.order.order_id, time=180)        
 
     def reactor(self):
-        print('tri')
-        self.order = Order.objects.get(order_id=self.order_id)
-        final_servei_cluster = {}
-        final_items = {}
-        effective_price = 0.0
-        price = 0.0
-        for servei in self.order.servei_cluster.keys():
-            if self.order.servei_cluster[servei]['status'] == SOLDIER_ACCEPTED:
-                final_servei_cluster[servei] = self.order.servei_cluster[servei]
-                for item_id in self.order.servei_cluster[servei]['items']:
-                    if self.order.items_cluster[item_id]['status'] == AMMO_PACKED:
-                        final_items[item_id] = self.order.items_cluster[item_id]
-                        effective_price += final_items[item_id]['effective_price']
-                        price += final_items[item_id]['price']
+        """
+          -- Check Count in final servei clusters
+          -- Check Delivery Type and Start respective service or kill if final_servei_cluster is empty
+          -- Notify Customer about next step
+        """
+        if self.order.status == CREATED:
+            self.status_setter(WORKING)
+            if self.order.final_servei_cluster == {}:
+                kill_order.delay(self.order.order_id)
+            else:
+                accepted_items = [servei['items'] for servei in self.order.final_servei_cluster.values()]
+                device = CustomerDevice.objects.get(
+                    customer_id=self.order.customer_id)
+                device.send_message('Order Cancelled', f'Order has been Accepted.',
+                                    data={'click_action': 'FLUTTER_NOTIFICATION_CLICK', 'data': {'cluster':accepted_items,
+                                        'type': 'order_accepted', 'order_id': self.order.order_id, 'status': self.order.status}}, api_key=API_KEY)
+                
+                if self.order.delivery_type == 'SSU':
+                    ssu_start.delay(self.order.order_id)
+                elif self.order.delivery_type == 'UDS':
+                    uds_start.delay(self.order.order_id)
 
-        # self.order.update(final_items=final_items, final_servei_cluster=final_servei_cluster,
-        #                   status=MISSION_PROCESSING, effective_price=effective_price,price=price)
-        print(final_items)
-        if not final_items:
-            print('Trying to kill')
-            for servei in self.order.servei_cluster.keys():
-                self.order.servei_cluster[servei]['status'] = SOLDIER_DECLINED
-            self.order.status = MISSION_FAILED
-            self.order.save()
-            kill_order.delay(self.order_id)
-        else:
-            self.order.final_items = final_items
-            self.order.final_servei_cluster = final_servei_cluster
-            self.order.status = MISSION_PROCESSING
-            self.order.effective_price = effective_price
-            self.order.price = price
-            self.order.save()
-            # self.order.save()
-            if self.order.delivery_type == 'SSU':
-                ssu_start.delay(self.order_id)
-                pass
-                # self.ssu_service()
-            elif self.order.delivery_type == 'UDS':
-                # First Round Starts Here
-                pass
-                uds_start.delay(self.order_id)
-                # self.uds_service()
-
-    def kill(self):
-        # Every servei declined
-        print('Killing it')
-        self.order = Order.objects.get(order_id = self.order_id)
-        if self.order.status == MISSION_CANCELLED or all([servei['status'] == SOLDIER_DECLINED for servei in self.order.servei_cluster.values()]) or self.order.status == MISSION_FAILED:
-            print('Kill dil')
-            self.order.status = MISSION_FAILED
-            self.order.save()
-            for servei in self.order.servei_cluster.keys():
-                print(servei)
-                device = MobileDevice.objects.get(locie_partner = servei)
-
-                device.send_message('Order Cancelled',f'Order has been Cancelled!. Order ID:{self.order.order_id}',
-                                    data = {'click_action': 'FLUTTER_NOTIFICATION_CLICK','data':{
-                    'type': 'order_cancel', 'order_id': self.order.order_id, 'status': self.order.status}},api_key=API_KEY)
-
-                # RPMNSystem(servei, '002').telegram(title='Order has been Cancelled', body=f'{self.order.order_id} is Cancelled', data={
-                #     'type': 'order_update', 'order_id': self.order.order_id, 'status': self.order.status})
+    def kill(self,force=False,reason=None):
+        """
+          - Cancellation works in these ways
+          - No Servei Accepted Order/ Customer Cancelled/ No Pilot Found
+          - Customer can cancel order in these ways before pickup, before service, on service, on the way
+          - Tell Customer, Servei and Pilot
+          - if delivery_type == UDS :: un-killable
+          - else kill
+          - At last set status to Failed
+        """
+        if self.order.status != FAILED and self.order.delivery_type == 'SSU' and force ==  False:
+            self.status_setter(FAILED)
+            for servei in self.order.final_servei_cluster.keys():
+                device = MobileDevice.objects.get(locie_partner=servei)
+                device.send_message('Order Cancelled', f'Order has been Cancelled!. Order ID:{self.order.order_id}',
+                                    data={'click_action': 'FLUTTER_NOTIFICATION_CLICK', 'data': {
+                                        'type': 'order_cancel', 'order_id': self.order.order_id, 'status': self.order.status}}, api_key=API_KEY)
+            device = CustomerDevice.objects.get(
+                customer_id=self.order.customer_id)
+            device.send_message('Order Cancelled', f'Your Order with Order Id - {self.order.order_id} has been Cancelled',
+                                data={'click_action': 'FLUTTER_NOTIFICATION_CLICK', 'data': {
+                                    'type': 'order_update', 'order_id': self.order.order_id, 'status': self.order.status}}, api_key=API_KEY)
             
-            device = CustomerDevice.objects.get(customer_id = self.order.customer_id)
+            if self.order.pilot_cluster:
+                pilot_id = self.order.pilot_cluster.keys()[-1]
+                device = MobileDevice.objects.get(locie_partner=pilot_id)
+                device.send_message('Order Cancelled', f'Order has been Cancelled!. Order ID:{self.order.order_id}',
+                                    data={'click_action': 'FLUTTER_NOTIFICATION_CLICK', 'data': {
+                                        'type': 'order_cancel', 'order_id': self.order.order_id, 'status': self.order.status}}, api_key=API_KEY)
+        elif force and reason:
+            self.status_setter(FAILED)
+            for servei in self.order.final_servei_cluster.keys():
+                device = MobileDevice.objects.get(locie_partner=servei)
+                device.send_message('Order Cancelled', f'Order has been Cancelled!. Order ID:{self.order.order_id} because {reason}',
+                                    data={'click_action': 'FLUTTER_NOTIFICATION_CLICK', 'data': {
+                                        'type': 'order_cancel', 'order_id': self.order.order_id, 'status': self.order.status}}, api_key=API_KEY)
+            device = CustomerDevice.objects.get(
+                customer_id=self.order.customer_id)
+            device.send_message('Order Cancelled', f'Your Order with Order Id - {self.order.order_id} has been Cancelled, because {reason}',
+                                data={'click_action': 'FLUTTER_NOTIFICATION_CLICK', 'data': {
+                                    'type': 'order_update', 'order_id': self.order.order_id, 'status': self.order.status}}, api_key=API_KEY)
             
-            device.send_message('Order Cancelled',f'Your Order with Order Id - {self.order.order_id} has been Cancelled',
-                                data= {'click_action': 'FLUTTER_NOTIFICATION_CLICK','data':{
-                'type': 'order_update', 'order_id': self.order.order_id, 'status': self.order.status}},api_key = API_KEY)
-            
-            # RPMNSystem(self.order.customer_id, '009').telegram(title='Order has been Cancelled', body='Your Order is Cancelled', data={
-            #     'type': 'order_update', 'order_id': self.order.order_id, 'status': self.order.status})
-        else:
-            print('Un-killable')
-        # TODO: Cancellation On its way
+            if self.order.pilot_cluster:
+                pilot_id = self.order.pilot_cluster.keys()[-1]
+                device = MobileDevice.objects.get(locie_partner=pilot_id)
+                device.send_message('Order Cancelled', f'Order has been Cancelled!. Order ID:{self.order.order_id}, because {reason}',
+                                    data={'click_action': 'FLUTTER_NOTIFICATION_CLICK', 'data': {
+                                        'type': 'order_cancel', 'order_id': self.order.order_id, 'status': self.order.status}}, api_key=API_KEY)
+
 
     def ssu_service(self):
-        PilotManager(self.order_id).pilot_compass()
-        self.order.status = MISSION_PROCESSING
+        """
+         - Check cityCode of all item with order.cityCode
+         - if any found not matching with cityCode put that into ship list 
+         - Servei will be notified about delivery Details For now only hyperlocal is working
+         - For now just find some pilot and send data to both of them
+        """
+        try:
+            PilotManager(self.order.order_id).pilot_compass()
+        except:
+            kill_order.delay(self.order.order_id,force=True,reason='We couldn\'t find any Pilot')
         self.order.save()
-        # Notify all the final serveis and pilot about otp and order update
-        # pilot: [order_id, 'cluster, price, opt, effective_price, coordinates{servei_id,'customer'},address{servei_id,'customer'},customer_name]
-        # servei : [pilot_id,otp,status,order_id,pilot_name,pilot_image]
-        # customer: [order_id,pilot_id,pilot_name,pilot_image,status]
-        #cluster : [{'servei_id','store_name',items= final_items[servei_id]}]
-        cluster = []
-        coordinates = {}
-        address = {}
-        for servei in self.order.final_servei_cluster.keys():
-            store = Store.objects.get(store_key=self.order.final_servei_cluster[servei]['store_key'])
-            coordinates[servei] = {'lat':position(store.coordinates_id)[0],'long':position(store.coordinates_id)[1]}
-            address[servei] = store.address 
-            serial = self.order.final_servei_cluster[servei]
-            serial['servei_id'] = servei
-            serial['items'] = [self.order.final_items[item_id] for item_id in serial['items'] ]
-            cluster.append(serial)
-            device = MobileDevice.objects.get(locie_partner = servei)
-
-            device.send_message('Order Update','New Update on Order',data = {
-                'click_action': 'FLUTTER_NOTIFICATION_CLICK','data':{'type':'order-update','action':'pilot_attach',
-                'order_id':self.order.order_id,'otp':self.order.otp,'pilot_id':self.order.pilot_id_first,
-                'pilot_name':self.order.pilot_name,'status':self.order.status}},api_key=API_KEY)
-
-            # RPMNSystem(servei,'002').telegram(title='Order Update',body='New Update on an Order',data={'type':'order-update','order_id':self.order.order_id,'otp':self.order.otp,
-            #                                                                                             'pilot_id':self.order.pilot_id_first,'pilot_name':self.order.pilot_name,'status':self.order.status})
-
-
-        coordinates['customer'] = {'lat':self.order.customer_coords[0],'long':self.order.customer_coords[1]}
-        address['customer'] = self.order.customer_address
-
-        device  = MobileDevice.objects.get(locie_partner = self.order.pilot_id_first)
-
-        device.send_message('New Order','New Order has Arrived for You',data={'click_action': 'FLUTTER_NOTIFICATION_CLICK',
-                            'data':{'type': 'new-order','order_id':self.order.order_id,'delivery_type':'SSU',
-                            'cluster':cluster,'price':self.order.price,'otp':self.order.otp,'effective_price':self.order.effective_price,
-                            'coordinates':coordinates,'address':address,'customer_name':self.order.customer_name}},api_key=API_KEY)
-
-        # RPMNSystem(self.order.pilot_id_first, '003').telegram(title='New Order',
-        #                                                  body='New Order has Arrived for You', data={'type': 'new-order','order_id':self.order.order_id,'delivery_type':'SSU',
-        #                                                  'cluster':cluster,'price':self.order.price,'otp':self.order.otp,'effective_price':self.order.effective_price,
-        #                                                  'coordinates':coordinates,'address':address,'customer_name':self.order.customer_name})
+        for servei_id in self.order.final_servei_cluster.keys():
+            device = MobileDevice.objects.get(locie_partner=servei_id)
+            device.send_message('Order Update', 'New Update on Order', data={
+                'click_action': 'FLUTTER_NOTIFICATION_CLICK', 'data': {'type': 'order-update', 'action': 'pilot_attach',
+                                                                       'order_id': self.order.order_id, 'otp': self.order.otp, 'pilot_id': self.order.pilot_id_first,
+                                                                       'pilot_name': self.order.pilot_name, 'status': self.order.status}}, api_key=API_KEY)
         
-        #TODO: Order Implementation on Customer
-        device = CustomerDevice.objects.get(customer_id = self.order.customer_id)
+        if self.order.pilot_cluster:
+            pilot_id = list(self.order.pilot_cluster.keys())[-1]
+            device = MobileDevice.objects.get(locie_partner=pilot_id)
+            device.send_message('Order Cancelled', f'New Order has arrivedOrder ID:{self.order.order_id}, because',
+                                    data={'click_action': 'FLUTTER_NOTIFICATION_CLICK', 'data': {
+                                        'type': 'new_order', 'order_id': self.order.order_id, 'status': self.order.status}}, api_key=API_KEY)
 
-        device.send_message('Pilot Assigned',f"Your Order's Pilot is {self.order.pilot_name}",data={
-            'click_action': 'FLUTTER_NOTIFICATION_CLICK','data': {'type':'order-update','order_id':self.order_id,'status':self.order.status,
-            'pilot_name':self.order.pilot_id_first,'pilot_name':self.order.pilot_name,'pilot_image':self.order.pilot_image}},api_key=API_KEY)
+            device = CustomerDevice.objects.get(customer_id=self.order.customer_id)
+            device.send_message('Order Cancelled', f'{list(self.order.pilot_cluster.values())[-1]["name"]} is assigned as your Pilot',
+                                data={'click_action': 'FLUTTER_NOTIFICATION_CLICK', 'data': {
+                                    'type': 'order_update', 'order_id': self.order.order_id, 'status': self.order.status}}, api_key=API_KEY)
+            
 
-        # RPMNSystem(self.order.customer_id,'009').telegram(title='Your Order has found it\'s Pilot',body=f'{self.order.pilot_name} is your order\'s pilot',icon=self.order.pilot_image,data={'type':'order-update','order_id':self.order_id,'status':self.order.status,'pilot_name':self.order.pilot_id_first,'pilot_name':self.order.pilot_name,'pilot_image':self.order.pilot_image})
+
         
+       
     def uds_service(self):
-        ############################################### Look Required
-        # First and then return
-        if self.order.status == MISSION_PROCESSING: 
-            # First
-            # No Money related details will be shared
-            PilotManager(self.order_id).pilot_compass()
-        elif self.order.status == PILOT_FINISHED_LOADING:
-            PilotManager(self.order_id).pilot_compass(first=False)
-
-        cluster = []
-        coordinates = {}
-        address = {}
-        for servei in self.order.final_servei_cluster.keys():
-            store = Store.objects.get(store_key=self.order.final_servei_cluster[servei]['store_key'])
-            coordinates[servei] = {'lat':position(store.coordinates_id)[0],'long':position(store.coordinates_id)[1]}
-            address[servei] = store.address 
-            serial = self.order.final_servei_cluster[servei]
-            serial['servei_id'] = servei
-            serial['items'] = [self.order.final_items[item_id] for item_id in serial['items'] ]
-            cluster.append(serial)
-
-            device = MobileDevice.objects.get(locie_partner = servei)
-
-            device.send_message('Order Update','New Update on an Order',data={'click_action': 'FLUTTER_NOTIFICATION_CLICK',
-              'data':{'type':'order-update','action':'pilot_attach','order_id':self.order.order_id,'otp':self.order.otp,
-                      'pilot_id':self.order.pilot_id_first,'pilot_name':self.order.pilot_name,'status':self.order.status}},api_key=API_KEY)
-
-            # RPMNSystem(servei,'002').telegram(title='Order Update',body='New Update on an Order',data={'type':'order-update','order_id':self.order.order_id,'otp':self.order.otp,
-            #                                                                                             'pilot_id':self.order.pilot_id_first,'pilot_name':self.order.pilot_name,'status':self.order.status})
-
-        coordinates['customer'] = {'lat':self.order.customer_coords[0],'long':self.order.customer_coords[1]}
-        address['customer'] = self.order.customer_address
-        
-        ########################################################
-        if self.order.status == MISSION_PROCESSING:
-            device = MobileDevice.objects.get(locie_partner = self.order.pilot_id_first)
-
-            device.send_message('New Order','New Order has Arrived for You',data={'click_action': 'FLUTTER_NOTIFICATION_CLICK',
-            'data':{'type': 'new-order','order_id':self.order.order_id,'delivery_type':'UDS',
-                    'cluster':cluster,'otp':self.order.otp,'coordinates':coordinates,'address':address,
-                    'customer_name':self.order.customer_name}},api_key=API_KEY)
-
-            # RPMNSystem(self.order.pilot_id_first, '003').telegram(title='New Order',
-            #                                              body='New Order has Arrived for You', data={'type': 'new-order','order_id':self.order.order_id,'delivery_type':'UDS',
-            #                                              'cluster':cluster,'otp':self.order.otp,
-            #                                              'coordinates':coordinates,'address':address,'customer_name':self.order.customer_name})
-
-        elif self.order.status == PILOT_FINISHED_LOADING:
-            device = MobileDevice.objects.get(locie_partner = self.order.pilot_id_return)
-            device.send_message('New Order','New Order has Arrived for You',data={'click_action': 'FLUTTER_NOTIFICATION_CLICK',
-             'data':{'type': 'new-order','order_id':self.order.order_id,'delivery_type':'UDS','cluster':cluster,'price':self.order.price,
-             'otp':self.order.otp,'effective_price':self.order.effective_price,'coordinates':coordinates,'address':address,
-             'customer_name':self.order.customer_name}},api_key=API_KEY)
-
-            # RPMNSystem(self.order.pilot_id_first, '003').telegram(title='New Order',
-            #                                              body='New Order has Arrived for You', data={'type': 'new-order','order_id':self.order.order_id,'delivery_type':'UDS',
-            #                                              'cluster':cluster,'price':self.order.price,'otp':self.order.otp,'effective_price':self.order.effective_price,
-            #                                              'coordinates':coordinates,'address':address,'customer_name':self.order.customer_name})
-
-
-
-        
+        """
+          - Call pilot compass and assign pilot to order, if city Code matches
+          - else kill it forcefully
+        """
+        if self.order.pilot_cluster:
+            if len(self.order.pilot_cluster.keys()) == 1:
+                try:
+                    PilotManager(self.order.order_id).pilot_compass(first=False)
+                except:
+                    # Emergency Pilot
+                    pass
+            else:
+                try:
+                    PilotManager(self.order.order_id).pilot_compass(first=True)
+                except:
+                    kill_order.delay(self.order.order_id,force=True,reason='Couldn\'t find any Pilot near you.' )

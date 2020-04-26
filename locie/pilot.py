@@ -69,32 +69,6 @@ class PilotCreate(APIView):
             return Response({'error':'Account Does not Exist'},status=status.HTTP_404_NOT_FOUND)
 
 
-
-# class PilotManager:
-
-#     def locator(self,centre_id,cityCode,radius=3):
-#         """
-#          centre_id is the id of centre position.
-#          reference_id is triggered using centre_id
-#          redius = 3 where 3 is in km
-#          locates all the Pilot present in the radius of 3km around the centre
-#         """
-#         # Filter all points within range
-#         centre = Coordinates.objects.filter(reference_id=centre_id)
-#         rangers = Coordinates.objects.filter(position__distance_lte=(centre,D(m=radius*1000)))
-#         pilots = []
-#         for ranger in rangers:
-#             if ranger.cityCode == cityCode and ranger.relation == '002':
-#                 pilots.append(ranger)
-#         if pilots == []:
-#             return ['list of deafult DE']
-#         else:
-#             return pilots
-    
-#     def procsecutor(self,pilots):
-#         #pilots list will be sorted on the basis of weight they are loading
-#         quickSort_pilot(pilots,0,len(pilots))
-#         # We Will sort pilots according to distance
         
 class PilotManager:
 
@@ -106,7 +80,7 @@ class PilotManager:
     def pilot_compass(self,first=True):
         # Find Pilot
         #TODO: Not Implemented real pilot base
-        pilots  = Pilot.objects.all()
+        pilots  = Pilot.objects.filter(cityCode=self.order.cityCode)
         final_pilot = pilots[0]
         for pilot in pilots:
             if pilot.weight == 0:
@@ -115,21 +89,17 @@ class PilotManager:
             elif final_pilot.weight > pilot.weight:
                 final_pilot = pilot
         # order = Order.objects.get(order_id=self.order_id)
-        if first:
-            self.order.pilot_id_first = final_pilot.pilot_id
-            self.order.pilot_name = final_pilot.first_name + final_pilot.last_name
-            self.order.pilot_image = final_pilot.image
-            self.order.pilot_number = final_pilot.phone_number
-            self.order.position = final_pilot.coordinates.position
+        if final_pilot:
+            self.order.pilot_cluster[final_pilot.pilot_id] = {
+                "pilot_name":final_pilot.first_name +" " + final_pilot.last_name,
+                "pilot_phone_number":final_pilot.phone_number,
+                "image":final_pilot.image,
+                "coord_id":final_pilot.coordinates_id
+            }
             self.order.save()
+            
         else:
-            self.order.otp = str(OtpPulse())
-            self.order.pilot_id_return = final_pilot.pilot_id
-            self.order.pilot_name = final_pilot.first_name + final_pilot.last_name
-            self.order.pilot_image = final_pilot.image
-            self.order.pilot_number = final_pilot.phone_number
-            self.order.position = final_pilot.coordinates.position
-            self.order.save()
+            raise Exception()
             
     
     

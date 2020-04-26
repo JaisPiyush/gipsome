@@ -4,9 +4,14 @@ from django.template import Context, Template
 from django.http import HttpResponse
 from .models import LocieStoreSite
 from django.views import View
+from rest_framework.views import Response
+from rest_framework import status
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated, AllowAny
+
 
 class LocieStoreHomeView(View):
-    def get(self,request):
+    def get(self, request):
         uname = request.get_host().split(".")[0]
         locie_store = LocieStoreSite.objects.get(uname=uname)
         print(request.path)
@@ -21,15 +26,30 @@ class LocieStoreHomeView(View):
 
 
 class LocieStorePageView(View):
-    def get(self,request,obees):
+    def get(self, request, obees):
         uname = request.get_host().split(".")[0]
         # print(obees)
         locie_store = LocieStoreSite.objects.get(uname=uname)
         context = {}
         if locie_store.site_context:
             context = Context(locie_store.site_context[obees])
-        rendered = Engine().render(locie_store.site,page_name=obees)
+        rendered = Engine().render(locie_store.site, page_name=obees)
         template = Template(rendered).render(context)
         return HttpResponse(template)
 
 
+"""
+  - API View to meter the views of a site
+  - ajax will send uname after which we have to increas the view countof that sitein LocieStore Site
+"""
+
+
+class ViewMeter(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, format=None):
+        data = request.GET
+        site = LocieStoreSite.objects.get(uname=data['uname'])
+        site.views_site += 1
+        site.save()
+        return Response({}, status=status.HTTP_200_OK)

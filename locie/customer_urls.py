@@ -17,5 +17,9 @@ urlpatterns = [
 
     # @class DefaultItemPull
     path('defItems/',DefaultItemPull.as_view()),
+
+    path('login/',CustomerLogin.as_view()),
+
+    path('register/',CustomerAddmission.as_view()),   
     
 ]

@@ -23,14 +23,14 @@ urlpatterns = [
     #Item Alter
     path('serveiAlterItem/',ItemAlterView.as_view()),
     # one account
-    path('account/',CustomerLogin.as_view()), #--check
+    # path('account/',CustomerLogin.as_view()), #--check
     path('cityCode/',CityCodeCreate.as_view()),
     #Analytics
-    path('analytics/',Analytics.as_view()),
+    # path('analytics/',Analytics.as_view()),
     # Items Extractor
     path('items-extractor/',ItemExtractor.as_view()),
     #Store Team
-    path('store-team/',StoreTeamWindow.as_view()),
+    # path('store-team/',StoreTeamWindow.as_view()),
     #CategorySelection
     path('category-selection/',CategorySelection.as_view()),
     #DefaultItems
@@ -41,8 +41,6 @@ urlpatterns = [
     path('rate-list/',RateView.as_view()),
     #MeasureParam
     path('measure-parameters/',MeasureParamView.as_view()),
-    # portfolio
-    path('portfolio/',PortfolioManager.as_view()),
     #StoreCreate
     path('new-store/',CreateStoreView.as_view()),
 
@@ -72,13 +70,6 @@ urlpatterns = [
    #CategoryCreation
    path('categoryCreation/',CategoryCreation.as_view()),
 
-   #Customer Addmission
-   path('customerAddmission/',CustomerAddmission.as_view()), # --check
-
-   #Pilot Addmission
-   path('pilotAddmission/',PilotAddmission.as_view()),
-
-
-   
+  
 
 ]
