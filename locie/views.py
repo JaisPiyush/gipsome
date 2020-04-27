@@ -212,8 +212,8 @@ class CityCodeCreate(APIView):
     def post(self, request, format=None) :
 
         city = None
-        if not Token.objects.filter(key=request.POST['token']):
-            return Response({'error':'Un-authorised access'},status=status.HTTP_401_UNAUTHORIZED)
+        # if Token.objects.filter(key=request.POST['token']):
+        #     return Response({'error':'Un-authorised access'},status=status.HTTP_401_UNAUTHORIZED)
         try:
             city = CityCode.objects.get(cityCode = request.POST['cityCode'])
         except:
