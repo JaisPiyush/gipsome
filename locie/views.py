@@ -227,7 +227,7 @@ class CityCodeCreate(APIView):
 
         if 'state' in request.POST.keys():
                 city.state = request.POST['state']
-        elif 'city' in request.POST.keys():
+        if 'city' in request.POST.keys():
                 city.city = request.POST['city']
         city.save()
         serial = CityCodeSerializer(city)
