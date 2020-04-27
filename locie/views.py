@@ -221,16 +221,15 @@ class CityCodeCreate(APIView):
         if  not ',' in request.POST['pin_code']:
             if request.POST['pin_code'] not in city.pin_codes:
                 city.pin_codes.append(request.POST['pin_code'])
-                city.save()
+                
         else:
             city.pin_codes = list(set(city.pin_codes + request.POST['pin_code'].split(',')))
-            city.save()
-        keys = request.POST.keys()
-        for key in keys:
-            if 'state' == key:
+
+        if 'state' in request.POST.keys():
                 city.state = request.POST['state']
-            elif 'city' == key:
+        elif 'city' in request.POST.keys():
                 city.city = request.POST['city']
+        city.save()
         serial = CityCodeSerializer(city)
         if serial and city:
             return Response(serial.data, status=status.HTTP_200_OK)
