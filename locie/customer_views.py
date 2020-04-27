@@ -189,13 +189,17 @@ class CityCodeExtractor(APIView):
         else:
             cityCode = CityCode.objects.filter(
                 pin_codes__contains=[request.GET['pin_code']]).first()
-            serial = CityCodeSerializer(cityCode)
             if cityCode:
                 if 'all' in request.GET.keys():
 
-                    return Response({'cityCode': serial.data}, status=status.HTTP_200_OK)
+                    return Response({'cityCode': {
+                        "cityCode":cityCode.cityCode,
+                        "city":cityCode.city,
+                        "state":cityCode.state,
+                        "pin_codes":cityCode.pin_codes
+                    }}, status=status.HTTP_200_OK)
                 else:
-                    return Response({'cityCode': serial.data['cityCode'], 'city': serial.data['city']}, status=status.HTTP_200_OK)
+                    return Response({'cityCode': cityCode.cityCode, 'city': cityCode.city}, status=status.HTTP_200_OK)
 
             else:
                 return Response({}, status=status.HTTP_400_BAD_REQUEST)

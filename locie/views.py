@@ -212,6 +212,8 @@ class CityCodeCreate(APIView):
     def post(self, request, format=None) :
 
         city = None
+        if not Token.objects.filter(key=request.POST['token']):
+            return Response({'error':'Un-authorised access'},status=status.HTTP_401_UNAUTHORIZED)
         try:
             city = CityCode.objects.get(cityCode = request.POST['cityCode'])
         except:
@@ -671,7 +673,7 @@ class SuperUserAccount(APIView):
 
     def post(self, requests, format=None):
         account = Account.objects.create_super_account(requests.POST['account_id'],requests.POST['password'],'001',requests.POST['phone_number'],)
-        return Response({'account_id':account.account_id},status=status.HTTP_200_OK)
+        return Response({'account_id':account.account_id,"token":Token.objects.get(user=account).key},status=status.HTTP_200_OK)
 
 
 class CategoryCreation(APIView):

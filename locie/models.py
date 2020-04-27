@@ -87,7 +87,7 @@ class Account(AbstractBaseUser, PermissionsMixin):
                     account_id = pilot_id_creatore(city_code,request['aadhar'],request['phone_number'])
 
                 # Creating New Account    
-                account = AccountManager().create_account(account_id,request['password'],request['relation'],request['phone_number'])
+                account = objects.create_account(account_id,request['password'],request['relation'],request['phone_number'])
                 # print(account)
 
         except:
