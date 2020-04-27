@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/3.0/ref/settings/
 """
 
 import os
+from socket import gethostname
 # import getpass
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -88,10 +89,11 @@ ROOT_HOSTCONF = 'locie_server.hosts'
 DEFAULT_HOST = 'locie_server'
 SECURE_SSL_REDIRECT = False
 CORS_ORIGIN_ALLOW_ALL = True
-# CORS_ORIGIN_WHITELIST =[
-#     "http://localhost:3000"
-# ]
-# USERNAME = getpass.getuser()
+CORS_ORIGIN_WHITELIST =[
+    "http://localhost:3000",
+    "https://locie.herokuapp.com"
+]
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -117,11 +119,11 @@ WSGI_APPLICATION = 'locie_server.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
-        'NAME': 'imango',
+        'NAME': 'imango' if gethostname() == 'jarden' else 'gipsomedb',
         'HOST':'localhost',
         'PORT':'5432',
         'USER':'postgres',
-        'PASSWORD':'piyush@103'
+        'PASSWORD':'piyush@103'if gethostname() == 'jarden' else 'krispi@103904'
     }
     # 'default': {
     #     'ENGINE': 'django.contrib.gis.db.backends.postgis',
@@ -172,8 +174,8 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-CELERY_BROKER_URL = 'redis://:krispi@103904@localhost:6379//'# if USERNAME == 'jarden' else 'redis://:d2xy0QBprYp8a9Dgvhz8mYjURb4jbCHq@redis-19040.c1.ap-southeast-1-1.ec2.cloud.redislabs.com:19040//'
-CELERY_RESULT_BACKEND = 'db+postgresql://postgres:piyush@103@localhost:5432/imango' # if USERNAME == 'jarden' else 'db+postgresql://postgres:krispi@103904@localhost:5432/gipsomedb'
+CELERY_BROKER_URL = 'redis://:krispi@103904@localhost:6379//' if gethostname() == 'jarden' else 'redis://:d2xy0QBprYp8a9Dgvhz8mYjURb4jbCHq@redis-19040.c1.ap-southeast-1-1.ec2.cloud.redislabs.com:19040//'
+CELERY_RESULT_BACKEND = 'db+postgresql://postgres:piyush@103@localhost:5432/imango' if gethostname() == 'jarden' else 'db+postgresql://postgres:krispi@103904@localhost:5432/gipsomedb'
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
