@@ -20,6 +20,8 @@ urlpatterns = [
 
     path('login/',CustomerLogin.as_view()),
 
-    path('register/',CustomerAddmission.as_view()),   
+    path('register/',CustomerAddmission.as_view()), 
+
+    path('pickdropOrder/',PickDropOrderView.as_view()),  
     
 ]

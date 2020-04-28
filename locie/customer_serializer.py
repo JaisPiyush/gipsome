@@ -38,3 +38,9 @@ class SingelItemSerializer:
             "image": self.item.images[0],
             "variants": {"parameter":self.item.variants['parameter'],"variant": [ {"value":variant['value'],"price":variant['price'],"image":variant['image']} for variant in self.item.variants['variant']]} if self.item.variants else 'default'         
         }
+
+
+class PickDropOrderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PickDropOrder
+        fields = '__all__'

@@ -331,3 +331,51 @@ class CustomerAddmission(APIView):
                     return Response({'token': token.key, }, status=status.HTTP_202_ACCEPTED)
             else:
                 return Response({}, status=status.HTTP_406_NOT_ACCEPTABLE)
+
+
+class PickDropOrderView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, format=None):
+
+        data = json.loads(request.body)
+        phone = ''
+        if len(data['sender_phone_number']) > 10:
+            phone = data['sender_phone_number'][-1:-11:-1][::-1]
+        elif len(data['sender_phone_number']) < 10 :
+            return Response({},status=status.HTTP_206_PARTIAL_CONTENT)
+        else:
+            phone = data['sender_phone_number']
+
+
+        order = PickDropOrder.objects.create(
+            sender_phone_number=phone,
+            sender_address = data['sender_address'],
+            sender_name = data['sender_name'],
+            receivers_stack = {
+            "name":data['rec_name'],
+            "phone_number":data['rec_phone_number'],
+            "address":data['rec_address']
+             },
+             payee = data['payee']
+
+            )
+  
+        if 'distance' in data.keys():
+            order.distance = data['distance']
+            order.cost = order.distance*40.0/2
+        else:
+            order.cost = 40.0
+        order.save()
+        return Response({'cost':order.cost,'rec_address':order.receivers_stack['address'],"rec_name":order.receivers_stack['name'],'rec_phone_number':order.receivers_stack['phone_number']},status=status.HTTP_201_CREATED)
+    
+    def get(self, request, format=None):
+        data = request.GET
+        
+        orders = PickDropOrder.objects.filter(sender_phone_number=data['phone_number'])
+        if orders:
+            serial = PickDropOrderSerializer(orders,many=True)            
+            return Response({"orders":serial.data},status=status.HTTP_200_OK)
+        else:
+            return Response({"orders":[]},status=status.HTTP_200_OK)
+

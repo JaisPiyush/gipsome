@@ -605,5 +605,16 @@ class LocieStoreSite(models.Model):
     date_of_creation = models.DateField(default=timezone.now())
 
 
+class PickDropOrder(models.Model):
+    sender_phone_number = models.CharField(max_length=13,db_index=True,default='')
+    sender_address = JSONField(default=dict)
+    sender_name = models.CharField(max_length=70,default='')
+    receivers_stack = JSONField(default=dict)
+    # who will pay SEN -> sender REC -> receiver
+    payee = models.CharField(max_length=3,default='SEN')
+    distance = models.DecimalField(max_digits=7,decimal_places=4,default=0.00)
+    cost = models.DecimalField(max_digits=7,decimal_places=4,default=40.0)
+
+    
 
 

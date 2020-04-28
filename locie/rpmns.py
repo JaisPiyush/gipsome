@@ -18,9 +18,8 @@ class RPMNSRegistartionUpdate(APIView):
     def post(self, request, format=None):
         body = json.loads(request.body)
         if 'locie_partner' in body.keys():
-            device = MobileDevice.objects.filter(
-                locie_partner=body['locie_partner'])
-            if device:
+            device,created = MobileDevice.objects.get_or_create(locie_partner=body['locie_partner'])
+            if device or created:
                 mobile = device[0]
                 mobile.registration_id = body['registration_id']
                 mobile.save()
