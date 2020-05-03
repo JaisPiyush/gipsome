@@ -175,6 +175,10 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
+ADMIN_STATIC = ['/home/jarden/gipsomeserver/lib/python3.6/site-packages/django/contrib/admin/static'] if gethostname() != 'jarden' else []
+
+STATICFILES_DIRS = [] + ADMIN_STATIC
+
 CELERY_BROKER_URL = 'redis://:krispi@103904@localhost:6379//' if gethostname() == 'jarden' else 'redis://:d2xy0QBprYp8a9Dgvhz8mYjURb4jbCHq@redis-19040.c1.ap-southeast-1-1.ec2.cloud.redislabs.com:19040//'
 CELERY_RESULT_BACKEND = 'db+postgresql://postgres:piyush@103@localhost:5432/imango' if gethostname() == 'jarden' else 'db+postgresql://postgres:krispi@103904@localhost:5432/gipsomedb'
 CELERY_ACCEPT_CONTENT = ['application/json']
