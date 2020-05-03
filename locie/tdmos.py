@@ -78,6 +78,7 @@ class OtpPulse:
 
 def order_id_generator(data: str):
     # UP53$8499ODRTIME
+    customer = data
     customer = customer[6] + customer[7] + customer[8] + customer[9]
     return '{c}_{t}'.format(c=customer, t=OtpPulse.random_with_n_digits(4))
 

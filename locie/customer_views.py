@@ -230,13 +230,14 @@ class TemporaryOrderSystem(APIView):
         data = json.loads(request.body)
         servei_cluster = {}
         servei_list =[]
-        for key, value in data['cart']:
-            if value['servei_id'] in servei_cluster:
+        for value in data['cart'].values():
+            if value['servei_id'] in servei_cluster.keys():
                 servei_cluster[value['servei_id']]['items'].append(value)
                 servei_cluster[value['servei_id']]['net_price'] += value['price']
                 servei_cluster[value['servei_id']]['quantity'] += value['quantity']
             else:
                 servei_list.append(value['servei_id'])
+                servei_cluster[value['servei_id']] = {}
                 servei_cluster[value['servei_id']]['items'] = [value]
                 servei_cluster[value['servei_id']]['net_price'] = value['price']
                 servei_cluster[value['servei_id']]['quantity'] = value['quantity']
@@ -347,6 +348,7 @@ class PickDropOrderView(APIView):
             "address":data['rec_address']
              },
              payee = data['payee']
+
 
             )
   
