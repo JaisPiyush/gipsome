@@ -404,6 +404,7 @@ class Order(models.Model):
     payment_COD = models.BooleanField(default=True)
     payment_id = models.TextField(default='')
     payment_stack = JSONField(default=dict)
+    delivery_required = models.BooleanField(default=True)
     delivery_type = models.CharField(max_length=3, default='')
     cityCode = models.CharField(max_length=8, default='')
     otp = models.CharField(max_length=10, default='')
@@ -596,11 +597,7 @@ class LocieStoreSite(models.Model):
     site = JSONField(default=dict)
     # {"page_name":{}}
     site_context = JSONField(default=dict)
-    # views of site
-    views_site = models.IntegerField(default=0)
     monetized = models.BooleanField(default=True)
-    settlement_log = JSONField(default=dict)
-    last_settlement_date = models.DateTimeField(default=timezone.now())
     online = models.BooleanField(default=True)
     date_of_creation = models.DateField(default=timezone.now())
 
@@ -616,5 +613,21 @@ class PickDropOrder(models.Model):
     cost = models.DecimalField(max_digits=7,decimal_places=4,default=40.0)
 
     
+class Publytics(models.Model):
+    pub_id = models.CharField(max_length=50,primary_key=True,default='')
+    reference_id = models.CharField(max_length=70,default='')
+    site_uname = models.CharField(max_length=70,default='')
+    views_log = JSONField(default=dict)
+    revenue_log = JSONField(defualt=dict)
+    start_dates = models.DateField(default=timezone.now())
 
-
+class CustomerReviewModel(models.Model):
+    customer_id = models.CharField(max_length=50,default='')
+    rating = models.DecimalField(max_digits=3,decimal_places=2,default=0.00)
+    servei_ids = ArrayField(models.CharField(max_length=70),default=list)
+    store_keys = ArrayField(models.CharField(max_length=70),default=list)
+    item_ids = ArrayField(models.CharField(max_length=70),default=list)
+    order_ids = ArrayField(models.CharField(max_length=70),default=list)
+    pilot_ids = ArrayField(models.CharField(max_length=70),default=list)
+    review_type = models.CharField(max_length=15,default='COMMENT')
+    date_time = models.DateTimeField(default=timezone.now())

@@ -1,0 +1,2 @@
+// analytics function to upload count of view after 5 seconds of load
+export class analytics{constructor(){}activate(){window.onload = this.track()}track(){let uname = document.location.hostname.split(".")[0];if(uname !== "www" || uname !== "locie" || uname !== "lociestore"){setTimeout(() => {let today = new Date();let res = axios.get(`https://gipsome.gipsome-6392-longform-periodic-sigmadynamic-portal-atrocious.in/lociestore_api/analytics?uname=${uname}&date=${todat.getMonth()}-${today.getFullYear()}`);}, 5000);}}}

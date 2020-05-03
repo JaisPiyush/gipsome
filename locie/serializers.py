@@ -170,3 +170,10 @@ class RateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Rate
         fields = '__all__'
+
+
+class CustomerReviewSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = CustomerReviewModel
+        fields = '__all__'

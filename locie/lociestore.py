@@ -2,7 +2,7 @@ from .engine import Engine
 from django.template import Context, Template
 # from django.shortcuts import render, HttpResponse
 from django.http import HttpResponse
-from .models import LocieStoreSite
+from .models import LocieStoreSite,Publytics
 from django.views import View
 from rest_framework.views import Response
 from rest_framework import status
@@ -43,13 +43,16 @@ class LocieStorePageView(View):
   - ajax will send uname after which we have to increas the view countof that sitein LocieStore Site
 """
 
-
 class ViewMeter(APIView):
     permission_classes = [AllowAny]
 
-    def get(self, request, format=None):
-        data = request.GET
-        site = LocieStoreSite.objects.get(uname=data['uname'])
-        site.views_site += 1
-        site.save()
-        return Response({}, status=status.HTTP_200_OK)
+    def get(self,request,format=None):
+        publytics = Publytics.objects.filter(site_uname=request.GET['uname'])
+        if publytics:
+            publytics = publytics.first()
+            publytics.views_log[request.GET['date']] += 1
+            publytics.save()
+            return Response({},status=status.HTTP_200_OK)
+        else:
+            return Response({},status=status.HTTP_200_OK)
+

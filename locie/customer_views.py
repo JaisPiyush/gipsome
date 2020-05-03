@@ -240,7 +240,11 @@ class TemporaryOrderSystem(APIView):
     def post(self, request, format=None):
         data = request.GET
         order = Order.objects.create(
-            order_id=order_id_generator(data['customer_phone_number']))
+            order_id=order_id_generator(data['customer_phone_number']),
+            customer_id = data['customer_phone_number'],
+            customer_name = data['customer_name'],
+            customer_address = data['address'],
+            )
         price = 0.0
         effective_price = 0.0
         for cluster in data['clusters']:
@@ -258,8 +262,6 @@ class TemporaryOrderSystem(APIView):
             price += cluster['price']
             effective_price += cluster['effective_price']
         order.customer_id = data['customer_phone_number']
-        order.customer_name = data['customer_name']
-        order.customer_address = data['address']
         order.price = price
         order.effective_price = effective_price
         order.save()

@@ -71,6 +71,14 @@ class PilotCreate(APIView):
 
         
 class PilotManager:
+    """
+      Pilot Manager is responsible to find and dispatch order to pilot for an order.
+      The basic algorithm for finding a Pilot.
+      __future__
+
+      shipment function calculates the distance between sender and receiver and create's pick and Drop
+      order with all the details.
+    """
 
     def __init__(self,order_id):
         self.order_id = order_id
@@ -103,7 +111,6 @@ class PilotManager:
             
     
     
-        
 
 
 

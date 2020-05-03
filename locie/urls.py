@@ -29,10 +29,7 @@ urlpatterns = [
     # path('analytics/',Analytics.as_view()),
     # Items Extractor
     path('items-extractor/',ItemExtractor.as_view()),
-    #Store Team
-    # path('store-team/',StoreTeamWindow.as_view()),
-    #CategorySelection
-    path('category-selection/',CategorySelection.as_view()),
+
     #DefaultItems
     path('default-items/',DefaultItemsWindow.as_view()),
     # Item Creation

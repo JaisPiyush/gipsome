@@ -18,6 +18,7 @@ import time
 from time import sleep
 import json
 from .tasks import shared_task
+from secrets import token_urlsafe
 
 
 def position(coordinates_id):
@@ -67,8 +68,9 @@ class OtpPulse:
 
     def __str__(self):
         return repr(self.data)
-
-    def random_with_n_digits(self, n: int):
+    
+    @staticmethod
+    def random_with_n_digits(n: int):
         range_start = 10**(n-1)
         range_end = (10**n)-1
         return randint(range_start, range_end)
@@ -76,12 +78,8 @@ class OtpPulse:
 
 def order_id_generator(data: str):
     # UP53$8499ODRTIME
-    customer = [str(cusp) for cusp in data]
-    print(customer)
     customer = customer[6] + customer[7] + customer[8] + customer[9]
-    print(customer)
-    time = datetime.now(timezone.utc).strftime('%d%m%y|%H%M%S')
-    return 'UP53@{c}ODR{t}'.format(c=customer, t=time)
+    return '{c}_{t}'.format(c=customer, t=OtpPulse.random_with_n_digits(4))
 
 
 CREATED = 0
@@ -113,6 +111,8 @@ class CustomerOrderInterface(APIView):
     - Customers Item View will add variant it's price and effective price of variant directly
     - View for Order and Customer Interaction
     - Creation action = 'create-order
+    - Delviery required True means home dilvery is required and PickAndOrder will be fired
+    - else in-store checkout which will send servei asking accept and decline after accept card will directly transfer to completed section after which servei can mark complete
     - Data packet contains clusters,customer_stack,cityCode,payment_stack,cart_id,delivery_type,action,price,extra_charges
     - clusters is a JSON with item_id of cluster as key and cluster as value
     - cluster contains item_id,name,image,price,quantity,unit,measure,servei_id,store_key,store_name,prev_cat,cityCode
@@ -124,7 +124,7 @@ class CustomerOrderInterface(APIView):
         data = json.loads(request.body)
         if(data['action'] == CREATE):
             order = Order.objects.create(order_id=order_id_generator(
-                data['customer_stack']['customer_id']))
+                data['customer_stack']['customer_id']),delivery_requires=data['delivery_reuired'])
             order.delivery_type = data['delivery_type']
             cart = None
             if 'cart' in data.keys():
@@ -294,8 +294,11 @@ class TDMOSystem:
     def reactor(self):
         """
           -- Check Count in final servei clusters
+          -- delivery_requires id True
           -- Check Delivery Type and Start respective service or kill if final_servei_cluster is empty
           -- Notify Customer about next step
+          -- else 
+              - Jump out
         """
         if self.order.status == CREATED:
             self.status_setter(WORKING)
@@ -308,11 +311,11 @@ class TDMOSystem:
                 device.send_message('Order Cancelled', f'Order has been Accepted.',
                                     data={'click_action': 'FLUTTER_NOTIFICATION_CLICK', 'data': {'cluster':accepted_items,
                                         'type': 'order_accepted', 'order_id': self.order.order_id, 'status': self.order.status}}, api_key=API_KEY)
-                
-                if self.order.delivery_type == 'SSU':
-                    ssu_start.delay(self.order.order_id)
-                elif self.order.delivery_type == 'UDS':
-                    uds_start.delay(self.order.order_id)
+                if self.delivery_required:
+                    if self.order.delivery_type == 'SSU':
+                        ssu_start.delay(self.order.order_id)
+                    elif self.order.delivery_type == 'UDS':
+                        uds_start.delay(self.order.order_id)
 
     def kill(self,force=False,reason=None):
         """

@@ -8,6 +8,7 @@ from .serializers import AccountCreationSerializer
 from .serializers import *
 from .models import *
 import datetime
+from .tdmos import CREATED,DECLINED,WORKING,FINISHED,PENDING,SERVED,CREATE,CANCEL,FAILED
 import time
 from secrets import token_urlsafe
 from .serverOps import storeKeyGenerator, item_id_generator, OtpHemdal, dtime_diff, coord_id_generator
@@ -154,14 +155,15 @@ class CreateStoreView(APIView):
                                          opening_time= datetime.datetime.strptime(str(data['opening_time']),'%H:%M:%S'),
                                          closing_time = datetime.datetime.strptime(str(data['closing_time']),'%H:%M:%S') ,
                                          online=False, allowed=True,descriptions=data['descriptions'],
-                                         portfolio_updates=False, cityCode=servei.cityCode)
+                                         cityCode=servei.cityCode)
 
             servei.store_key = store.store_key
             servei.save()
-            coords = Coordinates.objects.create(coordinates_id=coord_id_generator(store.cityCode, store.store_key),
+            if 'coordinates' in data['address'].keys():
+                coords = Coordinates.objects.create(coordinates_id=coord_id_generator(store.cityCode, store.store_key),
                                  relation='904',
                                  position=Point(float(data['address']['coordinates']['latitude']),float(data['address']['coordinates']['longitude'])))
-            store.coordinates_id = coords.coordinates_id
+                store.coordinates_id = coords.coordinates_id
             store.save()
             
 
@@ -259,79 +261,6 @@ class CityCodeCreate(APIView):
 
 
 
-
-# # Portfolio Import
-# # Only Name and phone_number and address
-# class ServeiPortifolio(APIView):
-#     authentication_classes = [TokenAuthentication]
-#     permission_classes = [IsAuthenticated]
-
-#     def get(self, request, format=None):
-#         servei = Servei.objets.get(servei_id=request.POST['servei_id'])
-#         if servei:
-#             return Response({'servei_id': servei.servei_id, 'name': servei.first_name + ' '+servei.last_name, 'image': servei.image}, status=status.HTTP_302_FOUND)
-#         else:
-#             return Response({'error': 'Does not exist'})
-
-
-# Analytics
-"""
-  Return total order, total cash, net income
-  Now, yesterday, last week(last 7 days),untill (uptil now),all means fetch all
-  # remand now,yest,week,month
-"""
-# TODO: Very Important required fixing
-# class Analytics(APIView):
-#     authentication_classes = [TokenAuthentication]
-#     permission_classes = [IsAuthenticated]
-
-#     def get(self, request, format=None):
-#         if request.GET['remand']:
-#             if request.GET['remand'] == 'now':
-#                 orders = Order.objects.filter(serveis__contains=[
-#                     request.GET['servei_id']], store_cluster__contains=[request.GET['store_key']], date_of_creation=datetime.date.today()).order_by('-time_of_creation')
-
-#             elif request.GET['remand'] == 'yest':
-#                 orders = Order.objects.filter(serveis__contains=[request.GET['servei_id']], store_cluster__contains=[
-#                                               request.GET['store_key']], date_of_creation=datetime.date.today()-datetime.timedelta(days=1)).order_by('-time_of_creation')
-#             elif request.GET['remand'] == 'week':
-#                 orders = Order.objects.filter(serveis__contains=[request.GET['servei_id']], store_cluster__contains=[request.GET['store_key']], date_of_creation__gte=datetime.date.today(
-#                 )-datetime.timedelta(days=7), date_of_creation__lte=datetime.datetime.today()).order_by('-date_of_creation')
-#             elif request.GET['remand'] == 'untill':
-#                 orders = Order.objects.filter(serveis__contains=[request.GET['servei_id']], store_cluster__contains=[request.GET['store_key']],
-#                                               date_of_creation__lte=datetime.datetime.today()).order_by('-date_of_creation')
-#             sell = 0
-#             cash = 0.0
-#             for order in orders:
-#                 # extract all final items sold by servei
-#                 servei_sellout = order.final_pair[request.GET['servei_id']]
-#                 for item in servei_sellout:
-#                     # Returns [servei_id,price,eff_price,amount]
-#                     packet = order.items_data[item]
-#                     cash += packet[-2] * packet[1]
-#                     sell += packet[-1]
-
-#             return Response({'servei_id': request.GET['servei_id'], 'cashin': cash, 'sell': sell, 'remand': request.GET['remand']}, status=status.HTTP_200_OK)
-#         else:
-#             return Response({}, status=status.HTTP_400_BAD_REQUEST)
-
-
-
-class Analytics(APIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, format=None):
-        """
-          - Returns view on site, orders this month , money earned
-        """
-        order = Order.objects.filter(servei_list__contains=[request.GET['servei_id']])
-
-
-
-
-
-
 class ItemExtractor(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
@@ -344,58 +273,40 @@ class ItemExtractor(APIView):
         else:
             return Response({},status=status.HTTP_400_BAD_REQUEST)
     
-
-# class StoreTeamWindow(APIView):
-#     # authentication_classes = [TokenAuthentication]
-#     permission_classes = [AllowAny]
+       
+# class CategorySelection(APIView):
+    
+#     authentication_classes = [TokenAuthentication]
+#     permission_classes = [IsAuthenticated]
 
 #     def get(self, request, format=None):
-#         if Store.objects.get(store_key=request.GET['store_key']):
-#             store = Store.objects.get(store_key=request.GET['store_key'])
-#             team = []
-#             for servei in store.employees:
-#                 team.append(StoreTeamSerializer(Servei.objects.get(servei_id=servei)))
-#             if team is not []:
-#                 return Response(team, status=status.HTTP_200_OK)
-#             else:
-#                 return Response({}, status=status.HTTP_404_NOT_FOUND)
-#         else:
-#             return Response({'error':"No Store Found"},status=status.HTTP_404_NOT_FOUND)
-
-
-class CategorySelection(APIView):
-    
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, format=None):
         
-        if 'only-head' in request.GET.keys():
-            category = Category.objects.filter(Q(city_site__contains = [request.GET['cityCode']]) & Q(cat_type = 'FC'))
-            serial = HeadCategorySerializer(category,many=True)
-            if serial and category:
-                return Response({'categories':serial.data}, status=status.HTTP_200_OK)
-            else:
-                return Response({},status=status.HTTP_400_BAD_REQUEST)
-        else:
-            #TODO: SQLITE3 Category search caching 
-            father_categories_min = Category.objects.filter(Q(city_site__contains = [request.GET['cityCode']]) & Q(cat_type='FC'))
-            if father_categories_min:
-                father_categories = {}
-                for f_category in father_categories_min:
-                    f_category.next_cat = []
-                    f_category.default_items = []
-                    father_categories[f_category.cat_id] = CategoryModel(f_category)
-                sub_categories = Category.objects.filter(Q(city_site__contains = [request.GET['cityCode']]) & ~Q(cat_type = 'FC') & Q(radiod = True) | ~Q(default_items = []))[::1]
-                for index,real_category in enumerate(sub_categories):
-                    category = CategoryModel(real_category)
-                    if category.default_items:
-                        category.default_items =[DefaultItemModel(item) for item in DefaultItems.objects.filter(cat_id = real_category.cat_id)]
-                    father_categories[real_category.father_cat].next_cat.append(category)
-                serial = CategorySelectionSerializer(father_categories.values()).data()
-                return Response({"results":serial},status = status.HTTP_200_OK)
-            else:
-                return Response({},status=status.HTTP_400_BAD_REQUEST)
+#         if 'only-head' in request.GET.keys():
+#             category = Category.objects.filter(Q(city_site__contains = [request.GET['cityCode']]) & Q(cat_type = 'FC'))
+#             serial = HeadCategorySerializer(category,many=True)
+#             if serial and category:
+#                 return Response({'categories':serial.data}, status=status.HTTP_200_OK)
+#             else:
+#                 return Response({},status=status.HTTP_400_BAD_REQUEST)
+#         else:
+#             #TODO: SQLITE3 Category search caching 
+#             father_categories_min = Category.objects.filter(Q(city_site__contains = [request.GET['cityCode']]) & Q(cat_type='FC'))
+#             if father_categories_min:
+#                 father_categories = {}
+#                 for f_category in father_categories_min:
+#                     f_category.next_cat = []
+#                     f_category.default_items = []
+#                     father_categories[f_category.cat_id] = CategoryModel(f_category)
+#                 sub_categories = Category.objects.filter(Q(city_site__contains = [request.GET['cityCode']]) & ~Q(cat_type = 'FC') & Q(radiod = True) | ~Q(default_items = []))[::1]
+#                 for index,real_category in enumerate(sub_categories):
+#                     category = CategoryModel(real_category)
+#                     if category.default_items:
+#                         category.default_items =[DefaultItemModel(item) for item in DefaultItems.objects.filter(cat_id = real_category.cat_id)]
+#                     father_categories[real_category.father_cat].next_cat.append(category)
+#                 serial = CategorySelectionSerializer(father_categories.values()).data()
+#                 return Response({"results":serial},status = status.HTTP_200_OK)
+#             else:
+#                 return Response({},status=status.HTTP_400_BAD_REQUEST)
                     
                 
 
@@ -514,7 +425,7 @@ class ItemCreateView(APIView):
         item.city = CityCode.objects.get(cityCode=data['cityCode']).city
         item.save()
         serial = ItemSerializer(item)
-        if serial and iten:
+        if serial and item:
             return Response(serial.data,status=status.HTTP_200_OK)
         else:
             return Response({},status=status.HTTP_400_BAD_REQUEST)
@@ -761,36 +672,132 @@ class CheckStore(APIView):
         else:
             return Response({},status=status.HTTP_400_BAD_REQUEST)
 
-
-
-class CustomerAddmission(APIView):
+class VerifyToken(APIView):
     permission_classes = [AllowAny]
 
-    def post(self, requests, format=None):
-        data = json.loads(requests.body)
-        customer = Account.objects.filter(Q(account_id = data["phone_number"]) & Q(relation='009'))
-        if customer is None:
-            return Response({'message':'Account Already exist'},status=status.HTTP_403_FORBIDDEN)
+    def post(self,request, format=None):
+        """
+          To check if token exist or not
+          if exist then return true and false if doesn't
+        """
+        data = json.loads(request.body)
+        token = Token.objects.filter(key=data['token'])
+        if token:
+            return Response({"exist":1},status=status.HTTP_200_OK)
         else:
-            data['relation'] = '009'
-            account,cityCode = Account().pour(data)
-            if account == -1:
-                return Response({},status= status.HTTP_406_NOT_ACCEPTABLE )
-            else:
-                return Response({'token':Token.objects.get(user = account).key,'cityCode':cityCode,'account_id':account.account_id,'phone_number':account.phone_number,'relation':account.relation},status=status.HTTP_202_ACCEPTED)
+            return Response({"exist":0},status=status.HTTP_200_OK)
 
-class PilotAddmission(APIView):
+class Analytics(APIView):
+    """
+      Send View On Site this month, Total Views 
+      Orders this month
+      Revenue will pe paid after every month completion and revenue will be update then
+    """
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, format=None):
+        data = request.GET
+        publytics = Publytics.objects.filter(reference_id=data['store_key'])
+        servei_id = data['servei_id']
+        orders = Orders.objects.filter(servei_list__contains=[servei_id])
+        order_month = orders.filter(Q(date_time_creation__month = timezone.now().month) & Q(date_time_creation__year = timezone.now().year))
+        price_month = 0.0
+        price_total = 0.0
+        for order in orders:
+            if order.final_servei_cluster[servei_id]['status'] == SERVED:
+                price_month += order.final_servei_cluster[servei_id]['price']
+        for order in order_month:
+            if order.final_servei_cluster[servei_id]['status'] == SERVED:
+                price_month += order.final_servei_cluster[servei_id]['price']
+        failed_orders = orders.filter(~Q(final_servei_cluster__has_key=servei_id) | Q(final_servei_cluster__contains = {f'{servei_id}':{
+            "status":FAILED
+        }}))
+        success_orders = orders.filter(Q(final_servei_cluster__contains={f'{servei_id}':{
+           "status":SERVED
+        }}))
+        if publytics:
+            publytics = publytics.first()
+            return Response({
+                "store_key":data['store_key'],
+                "views":{
+                    "this_month":list(publytics.views_log.values())[-1],
+                    "total_views":sum(publytics.views_log.values())
+                },
+                "orders":{
+                    "total_orders":len(orders),
+                    "this_mont":len(order_month),
+                    "failed_orders":len(failed_orders),
+                    "success_orders":len(success_orders)
+                },
+                "revenue":{
+                    "total":price_total,
+                    "this_month":price_month
+                }
+            },status=status.HTTP_200_OK)
+        else:
+            return Response({
+                "store_key":data['store_key'],
+                "views":{
+                    "this_month":0,
+                    "total_views":0.0
+                },
+                "orders":{
+                    "total_orders":0,
+                    "this_mont":0,
+                    "failed_orders":0,
+                    "success_orders":0
+                },
+                "revenue":{
+                    "total":0,
+                    "this_month":0
+                }
+            },status=status.HTTP_200_OK)
+            
+class OrderHistory(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, format=None):
+        data = request.GET 
+        orders = Order.objects.filter(servei_list__contains = [data['servei_id']]).order_by('-date_time_creation')
+        if orders:
+            returning_order = []
+            for order in orders:
+                returning_order.append({
+                    "order_id":order.order_id,
+                    "payment_COD":order.payment_COD,
+                    "payment_complete":order.payment_complete,
+                    "clusters":order.final_servei_cluster[data['servei_id']] if data['servei_id'] in order.final_servei_cluster.keys() else order.servei_cluster[data['servei_id']],
+                    "delivery_required":1 if order.delivery_required else 0,
+                }),
+            return Response({"orders":returning_order},status=status.HTTP_200_OK)
+        else:
+            return Response({"orders":[]},status=status.HTTP_200_OK)
+
+
+class CustomerReview(APIView):
     permission_classes = [AllowAny]
 
-    def post(self, requests, format=None):
-        data = json.loads(requests.body)
-        pilot = Account.objects.filter(Q(aadhar = data["aadhar"]) & Q(relation = '003'))
-        if pilot is None:
-            return Response({'message':'Account Already exist'},status=status.HTTP_403_FORBIDDEN)
-        else:
-            data['relation'] = '003'
-            account,cityCode = Account().pour(data)
-            if account == -1:
-                return Response({},status= status.HTTP_406_NOT_ACCEPTABLE )
+    def post(self, request, format=None):
+        data = json.loads(request.body)
+        reviews = CustomerReviewModel.objects.filter(servei_id__contains = [data['servei_id']]).order_by('-date_time')
+        if reviews:
+            comments = CustomerReviewSerializer(reviews.filter(Q(review_type = 'COMMENT')),many=True)
+            complaints = CustomerReviewSerializer(reviews.filter(Q(review_type = 'COMPLAINT')),many=True)
+            reviews = CustomerReviewSerializer(reviews.filter(Q(review_type = 'REVIEW')),many=True)
+            if comments and complaints and reviews:
+                return Response({
+                    "comments":comments,
+                    "complaints":complaints,
+                    "reviews":reviews
+                },status=status.HTTP_200_OK)
             else:
-                return Response({'token':Token.objects.get(user = account).key,'cityCode':cityCode,'account_id':account.account_id,'phone_number':account.phone_number,'relation':account.relation},status=status.HTTP_202_ACCEPTED)
+                return Response({
+                    "comments":[],
+                    "complaints":[],
+                    "reviews":[]
+                },status=status.HTTP_200_OK)
+
+
+
