@@ -618,7 +618,7 @@ class Publytics(models.Model):
     reference_id = models.CharField(max_length=70,default='')
     site_uname = models.CharField(max_length=70,default='')
     views_log = JSONField(default=dict)
-    revenue_log = JSONField(defualt=dict)
+    revenue_log = JSONField(default=dict)
     start_dates = models.DateField(default=timezone.now())
 
 class CustomerReviewModel(models.Model):
