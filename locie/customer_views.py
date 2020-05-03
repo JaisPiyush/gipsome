@@ -372,7 +372,11 @@ class PickDropOrderView(APIView):
             if order:
                 order = order.first()
                 serial = OrderItemSerializer(order)
-                return Response({"items":serial.serialize()},status=status.HTTP_200_OK)
+                return Response({"items":serial.serialize(),
+                                 "subTotal":order.price,
+                                 "grandTotal":order.net_price,
+                                 "delivery":25.0
+                },status=status.HTTP_200_OK)
         else:
             porders = PickDropOrder.objects.filter(sender_phone_number=data['phone_number'])
             orders = Order.objects.filter(customer_id = data['phone_number'])
