@@ -23,5 +23,7 @@ urlpatterns = [
     path('register/',CustomerAddmission.as_view()), 
 
     path('pickdropOrder/',PickDropOrderView.as_view()),  
+
+    path('order-making/',TemporaryOrderSystem.as_view()),
     
 ]

@@ -398,11 +398,6 @@ class ItemCreateView(APIView):
         item.store_key = data['store_key']
         item.servei_id = data['servei_id']
         item.allowed = True
-        if data['price'] == data['effective_price']:
-            rate = Rate.objects.filter(categories__contains = [data['prev_cat']])
-            if rate:
-                rate = rate.first().rate
-                data['price'] = data['effective_price'] + (data['effective_price'] * rate/100)
         item.price = data['price']
         item.effective_price = data['effective_price']
         item.images = [image for image in data['images'] if image is not '@']

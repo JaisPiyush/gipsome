@@ -222,50 +222,37 @@ class DefaultItemPull(APIView):
 class TemporaryOrderSystem(APIView):
     permission_classes = [AllowAny]
     """
-      - Date 17 April 2020, COVID-19 Outbreak 
-      - Heading toward soft-launch on 20 April 2020, starting from groceries and essentials
-      - Ephemeral Cart on website will send the clusters containing data of items ordered
-      @param(item_id,item_name,servei_id,quantity,price,effective_price,unit,measure,store_name,store_key)
-      - Cart will contain additional data for our supervised service
-      @param(customer_phone_number,customer_name,address)
-      - System will take order and create Order  Model only with servei_cluster, items_cluster,effective_price,price,cityCode
-      - Will add data only regarding above parameters 
-      - customer_phone_numebr will ber used as customer_id
-      - After Order Creation Notification will be sent on my phone, After which I will monitor the order untill I mark it finished
-      - order status will only have two categories START and FINISHED
-      - For Nearest Future amount above 700 will pay 8% and 20 delivery Charge
-         
+     takes cart as dictionary which hve item_id as key and others such as {item_id, name, price, unit, quantity, measureParam, servei_id, store_key} as values
+     customer_name,phone number and adddress is sent with subtotal, delivery and grandTotal
+     Take the sequence and create order, notify my device
     """
-
     def post(self, request, format=None):
-        data = request.GET
-        order = Order.objects.create(
-            order_id=order_id_generator(data['customer_phone_number']),
-            customer_id = data['customer_phone_number'],
-            customer_name = data['customer_name'],
-            customer_address = data['address'],
-            )
-        price = 0.0
-        effective_price = 0.0
-        for cluster in data['clusters']:
-            if cluster['servei_id'] in order.servei_cluster.keys():
-                order.servei_cluster[cluster['servei_id']
-                                     ]['items'].append(cluster['item_id'])
-                order.servei_cluster[cluster['servei_id']
-                                     ]['effective_price'] += cluster['effective_price']
+        data = json.loads(request.body)
+        servei_cluster = {}
+        servei_list =[]
+        for key, value in data['cart']:
+            if value['servei_id'] in servei_cluster:
+                servei_cluster[value['servei_id']]['items'].append(value)
+                servei_cluster[value['servei_id']]['net_price'] += value['price']
+                servei_cluster[value['servei_id']]['quantity'] += value['quantity']
             else:
-                order.servei_cluster[cluster['servei_id']] = {
-                    "itmes": [cluster['item_id']], "effective_price": cluster['effective_price']}
-            order.items_clutser[cluster['item_id']] = cluster
-            # TODO: less secure  Future Warning should use direct extraction of prices from ORM
-            # Hijacking could lead to customer-wanted price
-            price += cluster['price']
-            effective_price += cluster['effective_price']
-        order.customer_id = data['customer_phone_number']
-        order.price = price
-        order.effective_price = effective_price
-        order.save()
-        return Response({"order_id": order.order_id}, status=status.HTTP_201_CREATED)
+                servei_list.append(value['servei_id'])
+                servei_cluster[value['servei_id']]['items'] = [value]
+                servei_cluster[value['servei_id']]['net_price'] = value['price']
+                servei_cluster[value['servei_id']]['quantity'] = value['quantity']
+        order = Order.objects.create(order_id = order_id_generator(data['customer_phone_number']),
+                                     servei_cluster = servei_cluster, customer_id=data['customer_phone_number'],
+                                     customer_stack={"phone_number":data['customer_phone_number'],"name":data['customer_name'],"address":data['customer_address']},
+                                     cityCode = 'UP53',net_price = data['grandTotal'],price=data['subTotal'],extra_charges={"delivery":25.0},
+
+                                     )
+        if order:
+            return Response({"order_id":order.order_id},status=status.HTTP_201_CREATED)
+        else:
+            return Response({},status=status.HTTP_200_OK)
+        
+
+
 
 
 class CustomerLogin(APIView):
@@ -374,10 +361,12 @@ class PickDropOrderView(APIView):
     def get(self, request, format=None):
         data = request.GET
         
-        orders = PickDropOrder.objects.filter(sender_phone_number=data['phone_number'])
-        if orders:
-            serial = PickDropOrderSerializer(orders,many=True)            
-            return Response({"orders":serial.data},status=status.HTTP_200_OK)
+        porders = PickDropOrder.objects.filter(sender_phone_number=data['phone_number'])
+        orders = Order.objects.filter(customer_id = data['phone_number'])
+        if orders or porders:
+            serial = PickDropOrderSerializer(porders,many=True)
+            oerial = OrderCustomerSerializer(orders,many=True)            
+            return Response({"p_orders":serial.data,"orders":oerial.data},status=status.HTTP_200_OK)
         else:
-            return Response({"orders":[]},status=status.HTTP_200_OK)
+            return Response({"orders":[],"p_orders":[]},status=status.HTTP_200_OK)
 

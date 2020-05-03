@@ -44,3 +44,8 @@ class PickDropOrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = PickDropOrder
         fields = '__all__'
+
+class OrderCustomerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Order
+        fields = ('order_id',"customer_stack","servei_cluster","price","extra_charges","net_price")
