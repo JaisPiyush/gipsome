@@ -241,9 +241,14 @@ class TemporaryOrderSystem(APIView):
                 servei_cluster[value['servei_id']]['items'] = [value]
                 servei_cluster[value['servei_id']]['net_price'] = value['price']
                 servei_cluster[value['servei_id']]['quantity'] = value['quantity']
-        order = Order.objects.create(order_id = order_id_generator(data['customer_phone_number']),
-                                     servei_cluster = servei_cluster, customer_id=data['customer_phone_number'],
-                                     customer_stack={"phone_number":data['customer_phone_number'],"name":data['customer_name'],"address":data['customer_address']},
+        phone = data['customer_phone_number']
+        if len(phone) > 10:
+            size = len(phone) - 10
+            phone = phone[size::1]
+
+        order = Order.objects.create(order_id = order_id_generator(phone),servei_list = servei_list,
+                                     servei_cluster = servei_cluster, customer_id=phone,
+                                     customer_stack={"phone_number":phone,"name":data['customer_name'],"address":data['customer_address']},
                                      cityCode = 'UP53',net_price = data['grandTotal'],price=data['subTotal'],extra_charges={"delivery":25.0},
 
                                      )
@@ -362,13 +367,19 @@ class PickDropOrderView(APIView):
     
     def get(self, request, format=None):
         data = request.GET
-        
-        porders = PickDropOrder.objects.filter(sender_phone_number=data['phone_number'])
-        orders = Order.objects.filter(customer_id = data['phone_number'])
-        if orders or porders:
-            serial = PickDropOrderSerializer(porders,many=True)
-            oerial = OrderCustomerSerializer(orders,many=True)            
-            return Response({"p_orders":serial.data,"orders":oerial.data},status=status.HTTP_200_OK)
+        if 'order_id' in data.keys():
+            order = Order.objects.filter(order_id = data['order_id'])
+            if order:
+                order = order.first()
+                serial = OrderItemSerializer(order)
+                return Response({"items":serial.serialize()},status=status.HTTP_200_OK)
         else:
-            return Response({"orders":[],"p_orders":[]},status=status.HTTP_200_OK)
+            porders = PickDropOrder.objects.filter(sender_phone_number=data['phone_number'])
+            orders = Order.objects.filter(customer_id = data['phone_number'])
+            if orders or porders:
+                serial = PickDropOrderSerializer(porders,many=True)
+                oerial = OrderCustomerSerializer(orders,many=True)            
+                return Response({"p_orders":serial.data,"orders":oerial.data},status=status.HTTP_200_OK)
+            else:
+                return Response({"orders":[],"p_orders":[]},status=status.HTTP_200_OK)
 

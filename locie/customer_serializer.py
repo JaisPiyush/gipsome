@@ -48,4 +48,24 @@ class PickDropOrderSerializer(serializers.ModelSerializer):
 class OrderCustomerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
-        fields = ('order_id',"customer_stack","servei_cluster","price","extra_charges","net_price")
+        fields = ('order_id',"net_price")
+
+class OrderItemSerializer:
+    def __init__(self,order):
+        self.order = order
+    
+    def serialize(self):
+        sendable_data = []
+        for value in self.order.servei_cluster.values():
+            for val in value['items']:
+                print(val)
+                sendable_data.append({
+                    "item_id":val['item_id'],
+                    "name":val['name'],
+                    "price":val['price'],
+                    "unit":val['unit'],
+                    "measure":val['measure'],
+                    "quantity":val['quantity']
+                })
+        return sendable_data
+
