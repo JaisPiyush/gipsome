@@ -174,7 +174,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
 STATIC_URL = '/static/'
-
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 ADMIN_STATIC = ['/home/jarden/gipsomeserver/lib/python3.6/site-packages/django/contrib/admin/static'] if gethostname() != 'jarden' else []
 
 STATICFILES_DIRS = [] + ADMIN_STATIC
