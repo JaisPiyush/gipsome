@@ -44,13 +44,13 @@ def storeKeyGenerator(servei_id):
     servei_id = servei_id.split('SER')
     delimatore = ['-'.join(servei_id), 'STR',
                   datetime.utcnow().strftime('%d%m%Y-%H%M%S')]
-    return ''.join(delimatore)
+    return (''.join(delimatore)).replace("-","_")
 
 
 def item_id_generator(servei_id):
     #UP53@57260SER6167ITMdate-time
     delimator = [servei_id,'ITM',datetime.utcnow().strftime('%d%m%Y-%H%M%S')]
-    return ''.join(delimator)
+    return (''.join(delimator)).replace("-","_")
 
 
 

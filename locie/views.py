@@ -165,7 +165,11 @@ class CreateStoreView(APIView):
                                  position=Point(float(data['address']['coordinates']['latitude']),float(data['address']['coordinates']['longitude'])))
                 store.coordinates_id = coords.coordinates_id
             store.save()
-            
+
+            # Creating Publytics
+            publytics = Publytics.objects.filter(reference_id=store.store_key)
+            if not publytics:
+                publytics = Publytics.objects.create(pub_id = f'pub-{token_urlsafe(6)}',reference_id=store.store_key)           
 
             return Response({'store_key':store.store_key}, status=status.HTTP_201_CREATED)
         else:
@@ -273,43 +277,6 @@ class ItemExtractor(APIView):
         else:
             return Response({},status=status.HTTP_400_BAD_REQUEST)
     
-       
-# class CategorySelection(APIView):
-    
-#     authentication_classes = [TokenAuthentication]
-#     permission_classes = [IsAuthenticated]
-
-#     def get(self, request, format=None):
-        
-#         if 'only-head' in request.GET.keys():
-#             category = Category.objects.filter(Q(city_site__contains = [request.GET['cityCode']]) & Q(cat_type = 'FC'))
-#             serial = HeadCategorySerializer(category,many=True)
-#             if serial and category:
-#                 return Response({'categories':serial.data}, status=status.HTTP_200_OK)
-#             else:
-#                 return Response({},status=status.HTTP_400_BAD_REQUEST)
-#         else:
-#             #TODO: SQLITE3 Category search caching 
-#             father_categories_min = Category.objects.filter(Q(city_site__contains = [request.GET['cityCode']]) & Q(cat_type='FC'))
-#             if father_categories_min:
-#                 father_categories = {}
-#                 for f_category in father_categories_min:
-#                     f_category.next_cat = []
-#                     f_category.default_items = []
-#                     father_categories[f_category.cat_id] = CategoryModel(f_category)
-#                 sub_categories = Category.objects.filter(Q(city_site__contains = [request.GET['cityCode']]) & ~Q(cat_type = 'FC') & Q(radiod = True) | ~Q(default_items = []))[::1]
-#                 for index,real_category in enumerate(sub_categories):
-#                     category = CategoryModel(real_category)
-#                     if category.default_items:
-#                         category.default_items =[DefaultItemModel(item) for item in DefaultItems.objects.filter(cat_id = real_category.cat_id)]
-#                     father_categories[real_category.father_cat].next_cat.append(category)
-#                 serial = CategorySelectionSerializer(father_categories.values()).data()
-#                 return Response({"results":serial},status = status.HTTP_200_OK)
-#             else:
-#                 return Response({},status=status.HTTP_400_BAD_REQUEST)
-                    
-                
-
 
 
 class DefaultItemsWindow(APIView):
@@ -511,7 +478,7 @@ class ServeiAvailablity(APIView):
             if servei:
                 servei.online = True if int(body['available']) == 1 else False
                 servei.save()
-                if servei.store != '':
+                if servei.store:
                     store = Store.objects.get(store_key=servei.store)
                     if store:
                         store.online = True if int(body['available']) == 1 else False
@@ -694,8 +661,9 @@ class Analytics(APIView):
     def get(self, request, format=None):
         data = request.GET
         publytics = Publytics.objects.filter(reference_id=data['store_key'])
+        widthrawl = False
         servei_id = data['servei_id']
-        orders = Orders.objects.filter(servei_list__contains=[servei_id])
+        orders = Order.objects.filter(servei_list__contains=[servei_id])
         order_month = orders.filter(Q(date_time_creation__month = timezone.now().month) & Q(date_time_creation__year = timezone.now().year))
         price_month = 0.0
         price_total = 0.0
@@ -711,17 +679,22 @@ class Analytics(APIView):
         success_orders = orders.filter(Q(final_servei_cluster__contains={f'{servei_id}':{
            "status":SERVED
         }}))
+        all_views = sum(publytics.views_log.values())
+        this_month_order = len(orders)
+        if all_views > 1000 and this_month_order >= 2:
+            widthrawl = True
         if publytics:
             publytics = publytics.first()
             return Response({
                 "store_key":data['store_key'],
+                "withdrawl":1 if widthrawl else 0,
                 "views":{
                     "this_month":list(publytics.views_log.values())[-1],
-                    "total_views":sum(publytics.views_log.values())
+                    "total_views":all_views
                 },
                 "orders":{
-                    "total_orders":len(orders),
-                    "this_mont":len(order_month),
+                    "total_orders":this_month_order,
+                    "this_month":len(order_month),
                     "failed_orders":len(failed_orders),
                     "success_orders":len(success_orders)
                 },
@@ -731,15 +704,17 @@ class Analytics(APIView):
                 }
             },status=status.HTTP_200_OK)
         else:
+            print(data['store_key'])
             return Response({
                 "store_key":data['store_key'],
+                "withdrawl":1 if widthrawl else 0,
                 "views":{
                     "this_month":0,
                     "total_views":0.0
                 },
                 "orders":{
                     "total_orders":0,
-                    "this_mont":0,
+                    "this_month":0,
                     "failed_orders":0,
                     "success_orders":0
                 },
@@ -793,6 +768,4 @@ class CustomerReview(APIView):
                     "complaints":[],
                     "reviews":[]
                 },status=status.HTTP_200_OK)
-
-
 

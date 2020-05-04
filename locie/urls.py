@@ -18,7 +18,7 @@ urlpatterns = [
     path('accountPassworReset/servei/',ServeiPasswordReset.as_view()),
 
     #Servei Order History
-    # path('orderHistory/servei/',ServeiOrderHistory.as_view()),
+    path('orderHistory/servei/',OrderHistory.as_view()),
 
     #Item Alter
     path('serveiAlterItem/',ItemAlterView.as_view()),
@@ -26,7 +26,7 @@ urlpatterns = [
     # path('account/',CustomerLogin.as_view()), #--check
     path('cityCode/',CityCodeCreate.as_view()),
     #Analytics
-    # path('analytics/',Analytics.as_view()),
+    path('analytics/',Analytics.as_view()),
     # Items Extractor
     path('items-extractor/',ItemExtractor.as_view()),
 
@@ -66,6 +66,9 @@ urlpatterns = [
 
    #CategoryCreation
    path('categoryCreation/',CategoryCreation.as_view()),
+
+   # Verify Token
+   path('verifyToken/',VerifyToken.as_view()),
 
   
 

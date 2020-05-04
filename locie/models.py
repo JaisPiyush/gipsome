@@ -13,6 +13,7 @@ from rest_framework.authtoken.models import Token
 import datetime
 from django.utils import timezone
 import json
+from secrets import token_urlsafe
 # Authentication Model
 
 
@@ -137,7 +138,7 @@ class Account(AbstractBaseUser, PermissionsMixin):
             partner.account = account
             partner.aadhar = request['aadhar']
             partner.address = request['address'] if isinstance(request['address'],dict) else json.loads(request['address'])
-            partner.pin_code = request['pin_code']
+            partner.pin_code = request['pin_code']           
             
             for key in keys:
                 if 'image' == keys:
@@ -154,8 +155,7 @@ class Account(AbstractBaseUser, PermissionsMixin):
                     partner.country_code = request['country_code']
                 elif 'dob' == key:
                     partner.dob = datetime.datetime.strptime(request['dob'],'%d-%m-%Y')
-            partner.save()
-        
+            partner.save()       
 
         # Pilot
         elif request['relation'] == '003':
