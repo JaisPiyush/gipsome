@@ -5,17 +5,18 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from rest_framework.views import Response
 from rest_framework import status
-# from .serializers import AccountCreationSerializer
 from .customer_serializer import *
 from .models import *
 import datetime
 import time
 from secrets import token_urlsafe
-# from .serverOps import storeKeyGenerator, item_id_generator, OtpHemdal, dtime_diff, coord_id_generator
 import json
 from django.db.models import Q
 from .serializers import CityCodeSerializer
+from .tdmos import API_KEY
+from .pilot import PilotManager
 from .tdmos import order_id_generator
+from math import ceil
 
 
 def variant_describe(item):
@@ -54,7 +55,7 @@ class CustomerCategoryView(APIView):
         prevCat = None
         if 'only-head' in data.keys():
             categories = Category.objects.filter(
-                Q(city_site__contains=[data['cityCode']]) & Q(cat_type='FC'))
+                Q(city_site__contains=[data['cityCode']]) & (Q(online = True) & Q(cat_type='FC')))
             categories = [{"cat_id": category.cat_id, "prev_cat": category.prev_cat, "name": category.name, "image": category.image,
                            "cat_type": category.cat_type, "delivery_type": category.delivery_type}for category in categories]
 
@@ -353,8 +354,6 @@ class PickDropOrderView(APIView):
             "address":data['rec_address']
              },
              payee = data['payee']
-
-
             )
   
         if 'distance' in data.keys():
@@ -363,6 +362,24 @@ class PickDropOrderView(APIView):
         else:
             order.cost = 40.0
         order.save()
+        device = MobileDevice.objects.all().first()
+        device.send_message('New Order', 'New Order has arrived for you', data={'click_action': 'FLUTTER_NOTIFICATION_CLICK',
+                                                                                    'data': {
+                                                                                        "pickDrop":1,
+                                                                                        "order_id":order.id,
+                                                                                        "sender_stack":{
+                                                                                            "name":order.sender_name,
+                                                                                            "phone_number":order.sender_phone_number,
+                                                                                            "address":order.sender_address
+                                                                                        } ,
+                                                                                        "receiver_stack":{
+                                                                                            "name":order.receiver_stack['name'],
+                                                                                            "phone_number":order.receiver_stack['phone_number'],
+                                                                                            "address":order.receiver_stack['address']
+                                                                                        },
+                                                                                        "payee":order.payee
+
+                                                                                    }}, api_key=API_KEY)
         return Response({'cost':order.cost,'rec_address':order.receivers_stack['address'],"rec_name":order.receivers_stack['name'],'rec_phone_number':order.receivers_stack['phone_number']},status=status.HTTP_201_CREATED)
     
     def get(self, request, format=None):
@@ -387,3 +404,25 @@ class PickDropOrderView(APIView):
             else:
                 return Response({"orders":[],"p_orders":[]},status=status.HTTP_200_OK)
 
+
+class PilotChargeView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self,request,format=None):
+        """
+          servei_list with commas, customer_coords with comma and delivery_type
+          if delivery_type is UDS then infor sent will be deivided into two parts
+        """
+        data = request.GET 
+        servei_list = []
+        if ',' in data['servei_list']:
+            servei_list = (data['servei_list']).split(',')
+        else:
+            servei_list = data['servei_list']
+        customer_coords = (data['customer_coords']).split(',')
+        farthest_point,distance = PilotManager.fartest_point(servei_list,customer_coords)
+        charge = PilotManager.pilot_charge(distance,uds = True if data['delivery_typr'] == 'UDS' else False)
+        if data['delivery_type'] == 'UDS':
+            return Response({"Pick Up Charge":ceil(charge/2),"Drop Charge":ceil(charge/2)},status=status.HTTP_200_OK)
+        elif data['delivery_type'] == 'SSU':
+            return Response({"Delivery Charge":charge},status=status.HTTP_200_OK)

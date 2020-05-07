@@ -112,15 +112,15 @@ class Account(AbstractBaseUser, PermissionsMixin):
             device.partnership = request['relation']
             device.save()
             
-        # Checking Coordinates exist or not
-        coordinates = None
-        coordinates = Coordinates.objects.get_or_create(coordinates_id = account.account_id)[0]
-        # print(coordinates)
+        # # Checking Coordinates exist or not
+        # coordinates = None
+        # coordinates = Coordinates.objects.get_or_create(coordinates_id = account.account_id)[0]
+        # # print(coordinates)
         
-        coordinates.relation = request['relation']
-        if 'lat' in request.keys():
-            coordinates.position = Point(float(request['lat']),float(request['long']))
-        coordinates.save()
+        # coordinates.relation = request['relation']
+        # if 'lat' in request.keys():
+        #     coordinates.position = Point(float(request['lat']),float(request['long']))
+        # coordinates.save()
                                            
         partner = None
         
@@ -155,6 +155,9 @@ class Account(AbstractBaseUser, PermissionsMixin):
                     partner.country_code = request['country_code']
                 elif 'dob' == key:
                     partner.dob = datetime.datetime.strptime(request['dob'],'%d-%m-%Y')
+                elif 'coordinates' == key:
+                    partner.coordinates = gis_models.Point(request['coordinates']['lat'],request['coordinates']['long'])
+                    
             partner.save()       
 
         # Pilot
@@ -173,7 +176,7 @@ class Account(AbstractBaseUser, PermissionsMixin):
             partner.vehicle_id = request['vehicle_id']
             partner.driving_license = request['driving_license']
             partner.dl_image = request['dl_image']
-            partner.coordinates_id = coordinates.coordinates_id
+            
 
             if 'email' in keys:
                 partner.email = request['email']
@@ -233,14 +236,14 @@ class Item(models.Model):
     default_item_id = models.CharField(max_length=70,default='none')
 
 
-# Position Database
-class Coordinates(models.Model):
-    #account_id
-    coordinates_id = models.CharField(max_length=50, primary_key=True, default='')
-    # 001 : Servei, 002: DE, 009: customer, 100: Locie , 904: Store
-    relation = models.CharField(max_length=10, default='', db_index=True)
-    position = gis_models.PointField(
-        srid=4326, default=Point(0.00, 0.00, srid=4326))
+# # Position Database
+# class Coordinates(models.Model):
+#     #account_id
+#     coordinates_id = models.CharField(max_length=50, primary_key=True, default='')
+#     # 001 : Servei, 002: DE, 009: customer, 100: Locie , 904: Store
+#     relation = models.CharField(max_length=10, default='', db_index=True)
+#     position = gis_models.PointField(
+#         srid=4326, default=Point(0.00, 0.00, srid=4326))
     
 
 
@@ -260,10 +263,7 @@ class Servei(models.Model):
     gender = models.CharField(max_length=20, default='')
     profession = models.CharField(max_length=30, default='')
     image = models.TextField(default='')
-
-    # Coordinate db ref
-    # coordinates = models.ForeignKey(Coordinates, on_delete=models.CASCADE)
-    coordinates_id = models.CharField(max_length=50,db_index=True,default='')
+    coordinates = gis_models.PointField(srid=4326, default=Point(0.00, 0.00, srid=4326))
 
     # Official Data
     aadhar = models.CharField(
@@ -289,9 +289,6 @@ class Servei(models.Model):
     country = models.CharField(max_length=20, default='INDIA')
     country_code = models.CharField(max_length=4, default='+91')
 
-    # coordinates = CoordinateManager(coordinates_id)
-    
-
 
 
 # TODO:Fix Store
@@ -300,7 +297,7 @@ class Store(models.Model):
     store_name = models.CharField(max_length=50, default='')
     # creator
     creator = models.CharField(max_length=30, default=True, db_index=True)
-
+    coordinates = gis_models.PointField(srid=4326, default=Point(0.00, 0.00, srid=4326))
     store_category = ArrayField(models.CharField(max_length=30), default=list)
     father_categories = ArrayField(
         models.CharField(max_length=30), default=list)
@@ -331,7 +328,7 @@ class Store(models.Model):
     cityCode = models.CharField(max_length=6, db_index=True, default='')
 
     # Coordinates data
-    coordinates_id = models.CharField(max_length=50,db_index=True,default='')
+    coordinates = gis_models.PointField(srid=4326, default=Point(0.00, 0.00, srid=4326))
     # Use strftime to set this
     opening_time = models.TimeField(default = timezone.now().time())
     closing_time = models.TimeField(default = timezone.now().time())
@@ -376,18 +373,24 @@ class Order(models.Model):
       - customer stack contains address, name, phone number, coordinates as key value pair IMP. coordinates contains json lat and long
       - payment id is the razorpay id
       - payment stack contians all other responses of razorpay as key value pair
-      - And A usual
+      - route plan consist servei_id as key and and {lat,long} as values first is the farthest from customer and last is the nearest
     """
 
     order_id = models.CharField(
         max_length=50, default='', unique=True, primary_key=True, db_index=True)  
     servei_cluster = JSONField(default=dict)
     servei_list = ArrayField(models.CharField(max_length=70),default=list)
-    accepted_items = ArrayField(models.CharField(max_length=70),default=list)
-    picked_items = ArrayField(models.CharField(max_length=70),default=list)
-    pick_list = ArrayField(models.CharField(max_length=70),default=list)
+    route_plan = ArrayField(JSONField(),default=list)
+    senders_list = ArrayField(models.CharField(max_length=70),default=list)
+    receivers_list = ArrayField(models.CharField(max_length=70),default=list)
+    picked_list = ArrayField(models.CharField(max_length=70),default=list)
+    droped_list = ArrayField(models.CharField(max_length=70),default=list)
     final_servei_cluster = JSONField(default=dict)
     price = models.DecimalField(
+        max_digits=7, decimal_places=2, default=0.00)
+    locie_transfer = models.DecimalField(
+        max_digits=7, decimal_places=2, default=0.00)
+    locie_reversion = models.DecimalField(
         max_digits=7, decimal_places=2, default=0.00)
     net_price = models.DecimalField(
         max_digits=7, decimal_places=2, default=0.00)
@@ -405,7 +408,7 @@ class Order(models.Model):
     payment_id = models.TextField(default='')
     payment_stack = JSONField(default=dict)
     delivery_required = models.BooleanField(default=True)
-    delivery_type = models.CharField(max_length=3, default='')
+    delivery_type = models.CharField(max_length=3, default='') # SSU,UDS and PAD
     cityCode = models.CharField(max_length=8, default='')
     otp = models.CharField(max_length=10, default='')
 
@@ -440,7 +443,7 @@ class Category(models.Model):
 
     # PickType --> OP (One Pick) , MP (Multi Pick)
     pick_type = models.CharField(max_length=2, default='OP',blank=True)
-
+    online = models.BooleanField(default=True)
     # Post Complete Enabled
     # True will give Servei access to implement post-complete feature in item
     #postCompleteEnable = models.BooleanField(default=False)
@@ -512,8 +515,10 @@ class CustomerDevice(AbstractFCMDevice):
 class Customer(models.Model):
     customer_id = models.CharField(max_length=50, primary_key=True, default='')
     gender = models.CharField(max_length=10, default='')
+    name = models.CharField(max_length=120,default='')
     address = JSONField(default=dict)
-    coordinates_id = models.CharField(max_length=50,db_index=True,default='')
+    coordinates = gis_models.PointField(srid=4326, default=Point(0.00, 0.00, srid=4326))
+    # coordinates_id = models.CharField(max_length=50,db_index=True,default='')
     dob = models.DateField(default = timezone.now())
     extras = JSONField(default=dict)
 
@@ -552,7 +557,8 @@ class Pilot(models.Model):
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.00)
 
     # Coords id
-    coordinates_id = models.CharField(max_length=50,db_index=True,default='')
+    # coordinates_id = models.CharField(max_length=50,db_index=True,default='')
+    coordinates = gis_models.PointField(srid=4326, default=Point(0.00, 0.00, srid=4326))
     # coordinates = CoordinateManager(coordinates_id)
     # No. of order on time
     weight = models.IntegerField(default=0, db_index=True)
@@ -611,6 +617,9 @@ class PickDropOrder(models.Model):
     payee = models.CharField(max_length=3,default='SEN')
     distance = models.DecimalField(max_digits=7,decimal_places=4,default=0.00)
     cost = models.DecimalField(max_digits=7,decimal_places=4,default=40.0)
+    pilot_id = models.CharField(max_length=70,default='')
+    droped = models.BooleanField(default=False)
+    picked = models.BooleanField(default=False)
 
     
 class Publytics(models.Model):

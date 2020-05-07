@@ -22,4 +22,5 @@ urlpatterns = [
     path('api/',include('locie.urls')),
     path('customer_api/',include('locie.customer_urls')),
     path('lociestores_api/',include('locie.lociestores_url')),
+    path('pilot_api/',include('locie.pilot_urls')),
 ]

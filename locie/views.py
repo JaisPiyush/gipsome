@@ -645,9 +645,10 @@ class VerifyToken(APIView):
         data = json.loads(request.body)
         token = Token.objects.filter(key=data['token'])
         if token:
+            token = token.first()
             return Response({"exist":1},status=status.HTTP_200_OK)
         else:
-            return Response({"exist":0},status=status.HTTP_200_OK)
+            return Response({"exist":0},status=status.HTTP_403_FORBIDDEN)
 
 class Analytics(APIView):
     """
