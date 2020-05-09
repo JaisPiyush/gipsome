@@ -4,7 +4,8 @@ from .pilot import *
 urlpatterns = [
     path('login/',PilotLogin.as_view()),
     path('create/',PilotCreate.as_view()),
-    path('sender/',PilotUpdateSender.as_view()),
-    path('reciever/',PilotUpdateReciever.as_view()),
+    path('updates/',PilotOrderUpdate.as_view()),
+    path('orders/',PilotNewOrder.as_view()),
+
 ]
 

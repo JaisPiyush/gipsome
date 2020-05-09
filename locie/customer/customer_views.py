@@ -6,16 +6,16 @@ from rest_framework.views import APIView
 from rest_framework.views import Response
 from rest_framework import status
 from .customer_serializer import *
-from .models import *
+from ..models import *
 import datetime
 import time
 from secrets import token_urlsafe
 import json
 from django.db.models import Q
-from .serializers import CityCodeSerializer
-from .tdmos import API_KEY
-from .pilot import PilotManager
-from .tdmos import order_id_generator
+from ..serializers import CityCodeSerializer
+from ..tdmos.tdmos import API_KEY
+from ..pilot.pilot import PilotManager
+from ..tdmos.tdmos import order_id_generator
 from math import ceil
 
 

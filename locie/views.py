@@ -8,10 +8,10 @@ from .serializers import AccountCreationSerializer
 from .serializers import *
 from .models import *
 import datetime
-from .tdmos import CREATED,DECLINED,WORKING,FINISHED,PENDING,SERVED,CREATE,CANCEL,FAILED
+from .tdmos.tdmos import CREATED,DECLINED,WORKING,FINISHED,PENDING,SERVED,CREATE,CANCEL,FAILED
 import time
 from secrets import token_urlsafe
-from .serverOps import storeKeyGenerator, item_id_generator, OtpHemdal, dtime_diff, coord_id_generator
+from .gadgets.serverOps import storeKeyGenerator, item_id_generator, OtpHemdal, dtime_diff, coord_id_generator
 import json
 from django.db.models import Q
 
@@ -477,6 +477,8 @@ class ServeiAvailablity(APIView):
         else:
             if servei:
                 servei.online = True if int(body['available']) == 1 else False
+                if 'coordinates' in body.keys():
+                    servei.coordinates = Point(body['coordinates']['lat'],body['coordinates']['long'])
                 servei.save()
                 if servei.store:
                     store = Store.objects.get(store_key=servei.store)

@@ -1,29 +1,31 @@
 from enum import Enum
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from .models import Order, Account, Servei, Item, Customer, Pilot, Store, MobileDevice, CustomerDevice, Coordinates, Cart, Rate, ExtraCharges
+from ..models import *
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.views import Response
-from .serializers import OrderSerialzer
+from ..serializers import OrderSerialzer
 from rest_framework import status
-from datetime import datetime, timezone
-from .serverOps import dtime_diff
+from datetime import datetime
+from django.utils import timezone
+from ..gadgets.serverOps import dtime_diff
 from django.contrib.gis.geos.point import Point
-from .pilot import PilotManager
+from ..pilot.pilot_manager import PilotManager
 from random import randint
-from .rpmns import API_KEY
+from ..gadgets.rpmns import API_KEY
 import time
 from time import sleep
 import json
-from .tasks import shared_task
+from ..tasks import shared_task
 from secrets import token_urlsafe
 import math
 
 
 def position(coordinates_id):
     return Coordinates.objects.get(coordinates_id=coordinates_id).position
+    
 
 
 def set_positon(coord_id, data: dict):
@@ -58,8 +60,9 @@ def ssu_start(order_id):
 
 
 @shared_task
-def uds_start(order_id):
-    TDMOSystem(Order.objects.get(order_id=order_id)).uds_service()
+def inverse_ssu_start(order_id):
+    TDMOSystem(Order.objects.get(order_id=order_id)).inverse_ssu_service()
+
 
 @shared_task
 def padding(order_id):
@@ -90,7 +93,6 @@ def order_id_generator(data: str):
 
 
 CREATED = 0
-WORKING = 7
 FAILED = 9
 WORKING = 5
 ACCEPTED = 12
@@ -103,14 +105,6 @@ CANCEL = 69
 COMPLETED = 49
 
 
-def cartilage(cart, cluster):
-    if cluster['item_id'] in cart.clusters.keys():
-        cart.clusters.pop(cluster['item_id'])
-        cart.quanity -= cluster['quantity']
-        cart.price -= cluster['price']
-        if len(cart.clusters.keys()) == 0:
-            cart.delete()
-
 
 class CustomerOrderInterface(APIView):
     authentication_classes = [TokenAuthentication]
@@ -118,7 +112,7 @@ class CustomerOrderInterface(APIView):
 
     """
     - delivery required starts delivery other wise instore falicitation
-    - If delivery type is PAD, then just add into senders_list and recievers list 
+    - If delivery type is PAD, then just add into senders_list and recievers list
     -   using pad_route planner and then calculate the cost. After which Pilot is called to start following as planned
     -   data send will be sender{} reciever{} delivery_type,cityCode
     - Customers Item View will add variant it's price and effective price of variant directly
@@ -144,7 +138,8 @@ class CustomerOrderInterface(APIView):
                     "item_description": data['sender']['item_description'],
                     "address": data['sender']['address'],
                     "phone_number": data['sender']['phone_number'],
-                }
+                    "price":data['sender']['price'] if data['sender'].has_key('price') else 0.0
+                                    }
 
                 receiver = {
                     "id": data['receiver']['id'],
@@ -152,16 +147,19 @@ class CustomerOrderInterface(APIView):
                     "address": data['receiver']['address'],
                 }
                 otp = OtpPulse().random_with_n_digits(6)
+
                 order = Order.objects.create(order_id=order_id_generator(receiver['id']),
                                              senders_list=[sender['id']], receivers_list=[
-                                                 receiver['id']], delivery_type='PAD',
-                                             cityCode=data['cityCode'], otp=str(otp), customer_id=receiver['id'], customer_stack=receiver,
-                                             final_servei_cluster={sender['id']: sender}, price=0, extra_charges={"delivery_charge": 40.0}, net_price=40.0,
-                                             payment_COD=True, payment_complete=False, delivery_required=True,
+                                                 receiver['id']], delivery_type='PAD',price = sender['price'],net_price = sender['price'] + 40.0,
+                                                 locie_transfer=sender['price'],
+                                             cityCode=data['cityCode'], otp=str(otp), customer_id=receiver['id'], customer_stack=receiver,locie_reversion = 15.0,
+                                             final_servei_cluster={sender['id']: sender},extra_charges={"delivery_charge": 40.0},
+                                             payment_COD=True, payment_complete=False, delivery_required=True,picked_list = [],droped_list =[]
                                              )
                 tdmos = TDMOSystem(order).status_setter(CREATED)
                 # TODO: Required area based sarching of pilot
-                padding.delay(order.order_id)
+                PilotManager(order.order_id).pilot_compass()
+                # padding.delay(order.order_id)
                 return Response({"order_id": order.order_id, "price": order.price,
                                  "extra_charges": order.extra_charges, "net_price": order.net_price,
                                  "delivery_type": order.delivery_type, "otp": order.otp,
@@ -169,7 +167,8 @@ class CustomerOrderInterface(APIView):
             elif data['delivery_type'] == 'UDS' or data['delivery_type'] == 'SSU':
                 order = Order.objetcs.create(
                     order_id=order_id_generator(data['customer_phone_number']), delivery_type=data['delivery_type'], cityCode=data['cityCode'],
-                    delivery_required=True, customer_id=data['customer_phone_number'], customer_stack=data['customer_stack'])
+                    delivery_required=True, customer_id=data['customer_phone_number'], customer_stack=data['customer_stack'],
+                    picked_list = [],droped_list =[])
                 if not 'payment_stack' in data.keys():
                     order.payment_COD = True
                     order.payment_complete = False
@@ -309,16 +308,18 @@ class OrderServeiInterface(APIView):
         elif int(data['action']) == COMPLETED:
             order = Order.objects.get(order_id=data['order_id'])
             if order.delivery_type == 'UDS' and not order.delivery_required:
-                order.final_servei_cluster[data['servei_id']]['status'] = COMPLETED 
+                order.final_servei_cluster[data['servei_id']
+                                           ]['status'] = COMPLETED
                 order.save()
-                uds_start.delay(order.order_id)            
+                uds_start.delay(order.order_id)
             elif order.delivery_type == 'SSU' and not order.delivery_required:
-                order.final_servei_cluster[data['servei_id']]['status'] = COMPLETED
+                order.final_servei_cluster[data['servei_id']
+                                           ]['status'] = COMPLETED
                 order.save()
             elif order.delivery_required:
                 order.final_servei_cluster[data['sevei_id']]['status'] = SERVED
-                TDMOSystem(order).status_setter(FINISHED) 
-                order.save()              
+                TDMOSystem(order).status_setter(FINISHED)
+                order.save()
             # TDMOSystem(order.order_id).uds_service()
             return Response({'order_id': order.order_id, 'servei_status': COMPLETED, 'otp': order.otp, 'status': order.status}, status=status.HTTP_200_OK)
 
@@ -326,11 +327,11 @@ class OrderServeiInterface(APIView):
 class TDMOSystem:
 
     def __init__(self, order):
-        self.order = Order.objects.get(order_id=self.order_id)
+        self.order = order
 
     def status_setter(self, status):
         self.order.status = status
-        self.order.time_log[status] = timezone.now()
+        self.order.time_log[status] = (timezone.now()).strftime("%d-%m-%Y %H:%M:%S")
         self.order.save()
 
     def platform_formula(self, number, factor):
@@ -340,9 +341,13 @@ class TDMOSystem:
         else:
             return fx
 
-    def charge_calculator(self, final=False, real=False):
+    def charge_calculator(self, real=False):
         # Called once before reactore and jsut after reactore
-        number_servei = len(self.order.servei_cluster.keys())
+        number_servei = 0
+        if real:
+            number_servei = len(self.order.final_servei_cluster.keys())
+        else:
+            number_servei = len(self.order.servei_cluster.keys())
         factor = 40
         if number_servei > 1:
             number = 0
@@ -395,8 +400,7 @@ class TDMOSystem:
                     EXCESS_MULTIPLE = 2.8
                     servei['platform_charge'] = math.ceil(
                         servei['price'] * EXCESS_MULTIPLE/100)
-                servei['net_price'] = servei['price'] - \
-                    servei['platform_charge']
+                servei['net_price'] = servei['price'] - servei['platform_charge']
             self.order.save()
 
     def ignite(self):
@@ -404,20 +408,88 @@ class TDMOSystem:
           Notify every servei about orders and start reactore only if delivery required
         """
         for servei_id in self.order.servei_cluster.keys():
+            device = MobileDevice.objects.get(locie_partner=servei_id)
             device.send_message('New Order', 'New Order has arrived for you', data={'click_action': 'FLUTTER_NOTIFICATION_CLICK',
-                                                                                        'data': {'type': 'new-order', 'order_id': self.order.order_id,
-                                                                                                 'cluster': [item['item_id'] for item in self.order.servei_cluster[servei_id]['items']],
-                                                                                                 'total_quantity': self.order.servei_cluster[servei_id]['quantity'], 'net_price': self.order.servei_cluster['net_price'],
-                                                                                                 'status': self.order.status, 'delivery_type': self.order.delivery_type}}, api_key=API_KEY)
+                                                                                    'data': {'type': 'new-order', 'order_id': self.order.order_id,
+                                                                                             'cluster': [item['item_id'] for item in self.order.servei_cluster[servei_id]['items']],
+                                                                                             'total_quantity': self.order.servei_cluster[servei_id]['quantity'], 'net_price': self.order.servei_cluster['net_price'],
+                                                                                             'status': self.order.status, 'delivery_type': self.order.delivery_type}}, api_key=API_KEY)
         if self.order.delivery_required:
             wait.delay(self.order.order_id, time=180)
 
     def reactor(self):
         """
-          - Goal of this Function is to create senders, receivers list , 
+          - Goal of this Function is to create senders, receivers list ,
           - calculate real platform charges and set locie values. Assign Pilot to order
-          - First thing is to check whether the len of final servei_cluster
+          - First thing is to check whether the len of final servei_cluster,
+          -  if len is 0 than order status is failed and customer is notified
+          -  else get int and check delivery type. If SSU then servei in sender list and customer in receiver list  add pilot andstart ssu_sevice
+          -    else UDS then check if pilot cluster is 0 sender is customer and receivers are servei add pilot --> start inverse_ssu_service
+          -         else pilot_cluster  is 1 senders are servei and receivers are customers, pilot is assigned --> start ssu_service
         """
+        if len(self.order.final_servei_cluster.keys()):
+            self.charge_calculator(real=True)
+            self.status_setter(WORKING)
+            senders_list = []
+            receivers_list = []
+            net_price = 0.0
+            price = 0.0
+
+            if self.order.delivery_type == 'SSU':
+                for servei_id in self.order.final_servei_cluster.keys():
+                    senders_list.append(servei_id)
+                    net_price += self.order.final_servei_cluster[servei_id]['net_price']
+                    price += self.order.final_servei_cluster[servei_id]['price']
+                receivers_list.append(self.order.customer_id)
+                self.order.receivers_list = receivers_list
+                self.order.senders_list = senders_list
+                self.order.price = price
+                self.order.net_price = sum(
+                    [value for value in self.order.extra_charges.values()]) + price
+                self.order.locie_transfer = price
+                self.order.locie_reversion = net_price
+                self.order.save()
+                pilot_manager = PilotManager(order.order_id).pilot_compass()
+
+                # ssu_start.delay(self.order.order_id)
+            elif self.order.delivery_type == 'UDS':
+                if len(self.order.pilot_cluster.keys()) == 0:
+                    for servei_id in self.order.final_servei_cluster.keys():
+                        receivers_list.append(servei_id)
+                        net_price += self.order.final_servei_cluster[servei_id]['net_price']
+                        price += self.order.final_servei_cluster[servei_id]['price']
+                    senders_list.append(self.order.customer_id)
+                    self.order.receivers_list = receivers_list
+                    self.order.senders_list = senders_list
+                    self.order.price = price
+                    self.order.net_price = sum([value for value in self.order.extra_charges.values()]) + price
+                    self.order.locie_transfer = 0.0
+                    self.order.locie_reversion = 0.0
+                    self.order.save()
+                    pilot_manager = PilotManager(order.order_id).pilot_compass()
+                    # inverse_ssu_service.delay(self.order.order_id)
+                else:
+                    for servei_id in self.order.final_servei_cluster.keys():
+                        senders_list.append(servei_id)
+                        net_price += self.order.final_servei_cluster[servei_id]['net_price']
+                        price += self.order.final_servei_cluster[servei_id]['price']
+                    receivers_list.append(self.order.customer_id)
+                    self.order.receivers_list = receivers_list
+                    self.order.senders_list = senders_list
+                    self.order.price = price
+                    self.order.net_price = sum([value for value in self.order.extra_charges.values()]) + price
+                    self.order.locie_transfer = price
+                    self.order.locie_reversion = net_price
+                    self.order.save()
+                    pilot_manager = PilotManager(order.order_id).pilot_compass()
+                    # ssu_start.delay(self.order.order_id)
+        else:
+            self.status_setter(FAILED)
+            device = CustomerDevice.objects.get(customer_id=self.order.customer_id)
+            device.send_message('New Order', 'New Order has arrived for you',
+                                 data={'click_action': 'FLUTTER_NOTIFICATION_CLICK',
+                                 'data': {'type': 'order-cancel', 'order_id': self.order.order_id,
+                                 'status': self.order.status}}, api_key=API_KEY)
 
 
 
@@ -471,14 +543,16 @@ class TDMOSystem:
                 device.send_message('Order Cancelled', f'Order has been Cancelled!. Order ID:{self.order.order_id}, because {reason}',
                                     data={'click_action': 'FLUTTER_NOTIFICATION_CLICK', 'data': {
                                         'type': 'order_cancel', 'order_id': self.order.order_id, 'status': self.order.status}}, api_key=API_KEY)
-    
+
     def pad_service(self):
-        pass
-    
+        if self.order.delivery_type == 'PAD':
+            pass
+
+
     def ssu_service(self):
         """
          - Check cityCode of all item with order.cityCode
-         - if any found not matching with cityCode put that into ship list 
+         - if any found not matching with cityCode put that into ship list
          - Servei will be notified about delivery Details For now only hyperlocal is working
          - For now just find some pilot and send data to both of them
         """
@@ -508,7 +582,7 @@ class TDMOSystem:
                                 data={'click_action': 'FLUTTER_NOTIFICATION_CLICK', 'data': {
                                     'type': 'order_update', 'order_id': self.order.order_id, 'status': self.order.status}}, api_key=API_KEY)
 
-    def uds_service(self):
+    def inverse_ssu_service(self):
         """
           - Call pilot compass and assign pilot to order, if city Code matches
           - else kill it forcefully

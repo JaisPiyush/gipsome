@@ -1,5 +1,6 @@
 from django.urls import path, include
 from .customer_views import *
+from ..tdmos.tdmos import CustomerOrderInterface
 
 urlpatterns = [
 
@@ -25,5 +26,7 @@ urlpatterns = [
     path('pickdropOrder/',PickDropOrderView.as_view()),  
 
     path('order-making/',TemporaryOrderSystem.as_view()),
+
+    path('interface/',CustomerOrderInterface.as_view()),
     
 ]

@@ -1,5 +1,5 @@
 # # RPMNS Ram Pragat Mani Notification System
-from .models import MobileDevice, CustomerDevice,Account
+from ..models import MobileDevice, CustomerDevice,Account
 from rest_framework.views import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.authentication import TokenAuthentication

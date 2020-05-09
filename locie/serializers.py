@@ -2,7 +2,7 @@ from rest_framework import serializers
 from rest_framework.authtoken.models import Token
 from .models import Account, AccountManager
 from .models import *
-from .serverOps import servei_id_creatore, pilot_id_creatore
+from .gadgets.serverOps import servei_id_creatore, pilot_id_creatore
 
 
 class AccountCreationSerializer(serializers.ModelSerializer):
@@ -39,10 +39,6 @@ class PilotSerializer(serializers.ModelSerializer):
         model= Pilot
         fields= '__all__'
 
-class CoordinatesSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Coordinates
-        fields = '__all__'
 
 class FetchedItemSerializer(serializers.ModelSerializer):
     class Meta:

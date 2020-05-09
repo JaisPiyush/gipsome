@@ -8,7 +8,7 @@ from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.auth.models import PermissionsMixin
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.postgres.fields import ArrayField, JSONField
-from .serverOps import servei_id_creatore, pilot_id_creatore
+from .gadgets.serverOps import servei_id_creatore, pilot_id_creatore
 from rest_framework.authtoken.models import Token
 import datetime
 from django.utils import timezone
@@ -111,16 +111,6 @@ class Account(AbstractBaseUser, PermissionsMixin):
             device.registration_id = request['phone_token']
             device.partnership = request['relation']
             device.save()
-            
-        # # Checking Coordinates exist or not
-        # coordinates = None
-        # coordinates = Coordinates.objects.get_or_create(coordinates_id = account.account_id)[0]
-        # # print(coordinates)
-        
-        # coordinates.relation = request['relation']
-        # if 'lat' in request.keys():
-        #     coordinates.position = Point(float(request['lat']),float(request['long']))
-        # coordinates.save()
                                            
         partner = None
         
@@ -131,9 +121,7 @@ class Account(AbstractBaseUser, PermissionsMixin):
             partner.first_name = request['first_name']
             partner.last_name = request['last_name']
             partner.gender = request['gender']
-            # partner.profession = request['profession']
             # partner.coordinates = coordinates
-            partner.coordinates_id = coordinates.coordinates_id
             partner.cityCode = city_code
             partner.account = account
             partner.aadhar = request['aadhar']
@@ -236,15 +224,6 @@ class Item(models.Model):
     default_item_id = models.CharField(max_length=70,default='none')
 
 
-# # Position Database
-# class Coordinates(models.Model):
-#     #account_id
-#     coordinates_id = models.CharField(max_length=50, primary_key=True, default='')
-#     # 001 : Servei, 002: DE, 009: customer, 100: Locie , 904: Store
-#     relation = models.CharField(max_length=10, default='', db_index=True)
-#     position = gis_models.PointField(
-#         srid=4326, default=Point(0.00, 0.00, srid=4326))
-    
 
 
 # Servei Model

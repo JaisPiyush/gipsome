@@ -5,5 +5,5 @@ from django_hosts import patterns,host
 
 host_patterns = patterns('',
   host(r'gipsome',settings.ROOT_URLCONF,name='locie_server'),
-  host(r'\w+','locie.lociestores_url',name='lociestore'),
+  host(r'\w+','locie.lociestore.lociestores_url',name='lociestore'),
 )

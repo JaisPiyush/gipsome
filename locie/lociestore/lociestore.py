@@ -2,7 +2,7 @@ from .engine import Engine
 from django.template import Context, Template
 # from django.shortcuts import render, HttpResponse
 from django.http import HttpResponse
-from .models import LocieStoreSite,Publytics
+from ..models import LocieStoreSite,Publytics
 from django.views import View
 from rest_framework.views import Response
 from rest_framework import status

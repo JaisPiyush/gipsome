@@ -1,7 +1,7 @@
 from django.urls import path, include
 from .views import *
-from .rpmns import *
-from .tdmos import *
+from .gadgets.rpmns import *
+from .tdmos.tdmos import *
 urlpatterns = [
     #Check Connetcion
     path('checkConn/',CheckConnection.as_view()),
