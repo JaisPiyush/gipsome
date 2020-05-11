@@ -1,6 +1,9 @@
-from ..models import Order,Pilot,MobileDevice
-from django.contrib.gis.geos.point import Point
 import math
+
+from django.contrib.gis.geos.point import Point
+
+from ..models import Order, Pilot, Servei, Store
+
 
 class PilotManager:
     """
@@ -67,7 +70,7 @@ class PilotManager:
         distance = 0
         coords = Point(customer_coords['lat'],customer_coords['long'])
         for servei_id in servei_list:
-           dis = coords.distance(Servei.objects.get(servei_id=servei_id)) * 100
+           dis = coords.distance(Servei.objects.get(servei_id=servei_id).coordinates) * 100
            if dis > distance:
                distance = dis
                farthest_id = servei_id
@@ -87,9 +90,9 @@ class PilotManager:
                 return math.ceil(2*distance + 34)
 
 
-    def route_planner(self,returning=False):
+    def route_planner(self,cust_to_servei=False):
         # Called only after servei's are finalised and Pilot is ready
-        if not returning:
+        if not cust_to_servei:
             servei_list = self.order.final_servei_cluster.keys()
             customer_coords = self.order.customer_stack['coordinates']
             pilot_coords = self.order.pilot_stack[-1]['coordinates']
@@ -106,9 +109,10 @@ class PilotManager:
                 })
                 param = lambda point: point['index']
                 pointers.sort(reverse=True,key=param)
-                self.order.route_planner = pointers 
-        elif returning:
-            # first is customer and last is the farthes servei from customer
+                self.order.route_planner = pointers
+
+        elif cust_to_servei:
+            # first is customer and last is the farthest servei from customer
             # origin is customer and destin is farthest servei
             # Pick or drop updates coordinates of pilot  every time
             servei_list = self.final_servei_cluster.keys()
@@ -137,8 +141,12 @@ class PilotManager:
         price = 0.0
         if self.order.delivery_type == 'SSU':
             price = clust['net_price']
+            returnable_dict['entity'] = 'SEND'
         elif self.order.delivery_type == 'UDS' and len(self.order.pilot_cluster.keys()) > 1:
             price = clust['net_price']
+            returnable_dict['entity'] = 'SEND'
+        elif self.order.delivery_type == 'UDS' and len(self.order.pilot_cluster.keys()) == 1:
+            returnable_dict['entity'] = 'RECV'
             
         servei = Servei.objects.get(servei_id=servei_id)
         store = Store.objects.get(store_key=clust['store_key'])
@@ -151,6 +159,10 @@ class PilotManager:
         returnable_dict['items'] = clust['items']
         returnable_dict['net_price'] = price
         returnable_dict['name'] = store.store_name
+        returnable_dict['coordinates'] = {
+            "lat":servei.coordinates[0],
+            "long":servei.coordinates[-1]
+        }
         return returnable_dict
     
     def sumarize_pad(self,sender=True):
@@ -159,19 +171,20 @@ class PilotManager:
         returnable_dict['type'] = 'CUST'
         returnable_dict['transaction'] = 'PAY'
         returnable_dict['net_price'] = self.order.net_price if sender else 0
+        returnable_dict['entity'] = 'RECV' if not sender else 'SEND'
         return returnable_dict 
 
     def next_task(self):
         order = self.order
         returning_data = {}
         returning_data['primary'] = {
-                "order_id":order.order_id,
-                "locie_transfer":order.locie_transfer,
-                "loci_reversion":order.locie_reversion,
-                "otp":order.otp,
+                "order_id": order.order_id,
+                "locie_transfer": order.locie_transfer,
+                "loci_reversion": order.locie_reversion,
+                "otp": order.otp,
                 "net_charge": math.ceil(order.extra_charge['delivery_charge']/2) if order.delivery_type == 'UDS' else order.extra_charges['delivery_charge'],
-                "delivery_type":order.delivery_type,
-                "payment_COD":1 if order.payment_COD else 0,
+                "delivery_type": order.delivery_type,
+                "payment_COD": 1 if order.payment_COD else 0,
                 "payment_complete": 1 if order.payment_complete else 0
         }
         if len(order.picked_list) == len(order.senders_list):
@@ -206,7 +219,7 @@ class PilotManager:
                 returning_data['secondary'] = self.sumarize_servei(order.receivers_list[len(order.droped_list)])
                 return returning_data
             elif order.delivery_type == 'SSU':
-                returning_data['secondary'] = self.sumarize_servei(order.receivers_list[len(order.droped_list)])
+                returning_data['secondary'] = self.sumarize_servei(order.senders_list[len(order.droped_list)])
                 return returning_data
             elif order.delivery_type == 'PAD':
                 returning_data['secondary'] = self.sumarize_pad(sender=True)
@@ -217,16 +230,27 @@ class PilotManager:
     def sumarize_customer(self,customer_id):
         returnable_dict ={}
         price = 0.0
+        returnable_dict['entity'] = 'RECV'
         if self.order.delivery_type == 'SSU':
             price = self.order.net_price
+            for value in self.order.final_servei_cluster.values():
+                returnable_dict += value['items']
         elif self.order.delivery_type == 'UDS' and len(self.order.pilot_cluster.keys()) == 1:
             price = math.ceil(self.order.extra_charges['delivery_charge']/2)
+            returnable_dict['entity'] = 'SEND'
         elif self.order.delivery_type == 'UDS' and len(self.order.pilot_cluster.keys()) > 1:
             price = self.order.price + math.ceil(self.order.extra_charges['delivery_charge']/2)
+            returnable_dict['items'] = []
+            for value in self.order.final_servei_cluster.values():
+                returnable_dict += value['items']
+            returnable_dict['entity'] = 'RECV'
         returnable_dict['id'] = customer_id
         returnable_dict['phone_number'] = self.order.customer_stack['phone_number']
         returnable_dict['address'] = self.order.customer_stack['address']
         returnable_dict['type'] = 'CUST'
         returnable_dict['transaction'] = 'RECV'
         returnable_dict['net_price'] = price
+        returnable_dict['coordinates']=self.order.customer_stack['coordinates']
         return returnable_dict
+
+

@@ -1,19 +1,21 @@
 # Imports
-from fcm_django.models import AbstractFCMDevice, FCMDeviceManager
-from django.contrib.gis.db import models as gis_models
-from django.db import models
-from django.db.models.manager import BaseManager
-from django.contrib.gis.geos.point import Point
-from django.contrib.auth.base_user import AbstractBaseUser
-from django.contrib.auth.models import PermissionsMixin
-from django.contrib.auth.base_user import BaseUserManager
-from django.contrib.postgres.fields import ArrayField, JSONField
-from .gadgets.serverOps import servei_id_creatore, pilot_id_creatore
-from rest_framework.authtoken.models import Token
 import datetime
-from django.utils import timezone
 import json
-from secrets import token_urlsafe
+
+from django.contrib.auth.base_user import AbstractBaseUser
+from django.contrib.auth.base_user import BaseUserManager
+from django.contrib.auth.models import PermissionsMixin
+from django.contrib.gis.db import models as gis_models
+from django.contrib.gis.geos.point import Point
+from django.contrib.postgres.fields import ArrayField, JSONField
+from django.db import models
+from django.utils import timezone
+from fcm_django.models import AbstractFCMDevice
+from rest_framework.authtoken.models import Token
+
+from .gadgets.serverOps import servei_id_creatore, pilot_id_creatore
+
+
 # Authentication Model
 
 
@@ -88,7 +90,7 @@ class Account(AbstractBaseUser, PermissionsMixin):
                     account_id = pilot_id_creatore(city_code,request['aadhar'],request['phone_number'])
 
                 # Creating New Account    
-                account = objects.create_account(account_id,request['password'],request['relation'],request['phone_number'])
+                account = Account.objects.create_account(account_id,request['password'],request['relation'],request['phone_number'])
                 # print(account)
 
         except:
@@ -144,7 +146,7 @@ class Account(AbstractBaseUser, PermissionsMixin):
                 elif 'dob' == key:
                     partner.dob = datetime.datetime.strptime(request['dob'],'%d-%m-%Y')
                 elif 'coordinates' == key:
-                    partner.coordinates = gis_models.Point(request['coordinates']['lat'],request['coordinates']['long'])
+                    partner.coordinates = Point(request['coordinates']['lat'],request['coordinates']['long'])
                     
             partner.save()       
 
@@ -353,6 +355,7 @@ class Order(models.Model):
       - payment id is the razorpay id
       - payment stack contians all other responses of razorpay as key value pair
       - route plan consist servei_id as key and and {lat,long} as values first is the farthest from customer and last is the nearest
+      - biding bared signifies that acceptance of order hasbeen closed since 3min ha elapsed
     """
 
     order_id = models.CharField(
@@ -390,6 +393,7 @@ class Order(models.Model):
     delivery_type = models.CharField(max_length=3, default='') # SSU,UDS and PAD
     cityCode = models.CharField(max_length=8, default='')
     otp = models.CharField(max_length=10, default='')
+    biding_bared = models.BooleanField(default=False)
 
 
 # Category

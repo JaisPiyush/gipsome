@@ -1,0 +1,1035 @@
+POST http://localhost:8000/pilot_api/updates/
+Content-Type: application/json
+Authorization: Token df3bb73a14278c6efc40cd24ac6f44d9eda2933e
+
+{
+  "action": "DROP",
+  "pilot_id": "UP53@572608DE639288",
+  "coordinates": {
+    "lat": 26.767841,
+    "long": 83.375482
+  },
+  "receiver_id": "9936249924",
+  "order_id": "9924_1193"
+
+}
+
+###
+
+POST http://localhost:8000/pilot_api/updates/
+Content-Type: application/json
+Authorization: Token df3bb73a14278c6efc40cd24ac6f44d9eda2933e
+
+{
+  "action": "DROP",
+  "pilot_id": "UP53@572608DE639288",
+  "coordinates": {
+    "lat": 26.767841,
+    "long": 83.375482
+  },
+  "receiver_id": "9936249924",
+  "order_id": "9924_1193"
+
+}
+
+###
+
+POST http://localhost:8000/pilot_api/updates/
+Content-Type: application/json
+Authorization: Token df3bb73a14278c6efc40cd24ac6f44d9eda2933e
+
+{
+  "action": "DROP",
+  "pilot_id": "UP53@572608DE639288",
+  "coordinates": {
+    "lat": 26.767841,
+    "long": 83.375482
+  },
+  "receiver_id": "9936249924",
+  "order_id": "9924_1193"
+
+}
+
+###
+
+POST http://localhost:8000/pilot_api/updates/
+Content-Type: application/json
+Authorization: Token df3bb73a14278c6efc40cd24ac6f44d9eda2933e
+
+{
+  "action": "FOLLOW",
+  "order_id": "9924_1193"
+}
+
+<> 2020-05-10T020318.200.json
+
+###
+
+POST http://localhost:8000/pilot_api/updates/
+Content-Type: application/json
+Authorization: Token df3bb73a14278c6efc40cd24ac6f44d9eda2933e
+
+{
+  "action": "PICK",
+  "pilot_id": "UP53@572608DE639288",
+  "coordinates": {
+    "lat": 26.767841,
+    "long": 83.375482
+  },
+  "sender_id": "UP53@572608SER639288",
+  "order_id": "9924_1193"
+
+}
+
+<> 2020-05-10T020240.200.json
+
+###
+
+POST http://localhost:8000/pilot_api/updates/
+Content-Type: application/json
+Authorization: Token df3bb73a14278c6efc40cd24ac6f44d9eda2933e
+
+{
+  "action": "PICK",
+  "pilot_id": "UP53@572608DE639288",
+  "coordinates": {
+    "lat": 26.767841,
+    "long": 83.375482
+  },
+  "sender_id": "UP53@572608SER639288",
+  "order_id": "9924_1193"
+
+}
+
+<> 2020-05-10T020126.200.json
+
+###
+
+POST http://localhost:8000/pilot_api/updates/
+Content-Type: application/json
+Authorization: Token df3bb73a14278c6efc40cd24ac6f44d9eda2933e
+
+{
+  "action": "PICK",
+  "pilot_id": "UP53@572608DE639288",
+  "coordinates": {
+    "lat": 26.767841,
+    "long": 83.375482
+  },
+  "sender_id": "UP53@572608SER639288",
+  "order_id": "9924_1193"
+
+}
+
+<> 2020-05-10T020013.500.txt
+
+###
+
+POST http://localhost:8000/pilot_api/updates/
+Content-Type: application/json
+Authorization: Token df3bb73a14278c6efc40cd24ac6f44d9eda2933e
+
+{
+  "action": "FOLLOW",
+  "order_id": "9924_1193"
+}
+
+<> 2020-05-10T015953.200.json
+
+###
+
+POST http://localhost:8000/pilot_api/updates/
+Content-Type: application/json
+Authorization: Token df3bb73a14278c6efc40cd24ac6f44d9eda2933e
+
+{
+  "action": "FOLLOW",
+  "order_id": "9924_1193"
+}
+
+<> 2020-05-10T015713.200.json
+
+###
+
+POST http://localhost:8000/pilot_api/updates/
+Content-Type: application/json
+Authorization: Token df3bb73a14278c6efc40cd24ac6f44d9eda2933e
+
+{
+  "action": "FOLLOW",
+  "order_id": "9924_1193"
+}
+
+<> 2020-05-10T015420.500.txt
+
+###
+
+GET http://localhost:8000/pilot_api/orders/?pilot_id=UP53@572608DE639288
+Accept: application/json
+Authorization: Token df3bb73a14278c6efc40cd24ac6f44d9eda2933e
+
+<> 2020-05-10T015354.200.json
+
+###
+
+POST http://localhost:8000/api/order-interface-servei/
+Content-Type: application/json
+Authorization: Token 8f892ad53af811dd16d572bc8ec70e7798471cdc
+
+{
+  "action": 12,
+  "order_id": "9924_1193",
+  "servei_id": "UP53@572608SER639288",
+  "items": ["UP53@572608SER639288ITM09052020_161305"]
+}
+
+<> 2020-05-10T014551.200.json
+
+###
+
+POST http://localhost:8000/customer_api/interface/
+Content-Type: application/json
+
+{
+   "customer_phone_number": "9936249924",
+   "action": 39,
+  "delivery_type": "SSU",
+  "cityCode": "UP53",
+  "delivery_required": 1,
+   "customer_stack": {
+     "phone_number": "9936249924",
+     "address": {
+       "address_line_first": "Vindhyavashni Nagar"
+     },
+     "coordinates": {
+       "lat": 26.767841,
+       "long": 83.375482
+     }
+
+   },
+  "clusters": {
+    "UP53@572608SER639288ITM09052020_161305": {
+            "item_id": "UP53@572608SER639288ITM09052020_161305",
+            "name": "Harry Vendal",
+            "price": 242.36,
+           "quantity": 1.0,
+           "measure": "pcs",
+           "unit": 1.0,
+      "store_name": "Ram Vilas Kirana Store",
+      "servei_id": "UP53@572608SER639288",
+       "store_key": "UP53@572608_639288STR09052020_160217"
+     }
+  }
+}
+
+<> 2020-05-10T014518.201.json
+
+###
+
+POST http://localhost:8000/customer_api/interface/
+Content-Type: application/json
+
+{
+   "customer_phone_number": "9936249924",
+   "action": 39,
+  "delivery_type": "SSU",
+  "cityCode": "UP53",
+  "delivery_required": 1,
+   "customer_stack": {
+     "phone_number": "9936249924",
+     "address": {
+       "address_line_first": "Vindhyavashni Nagar"
+     },
+     "coordinates": {
+       "lat": 26.767841,
+       "long": 83.375482
+     }
+
+   },
+  "clusters": {
+    "UP53@572608SER639288ITM09052020_161305": {
+            "item_id": "UP53@572608SER639288ITM09052020_161305",
+            "name": "Harry Vendal",
+            "price": 242.36,
+           "quantity": 1.0,
+           "measure": "pcs",
+           "unit": 1.0,
+      "store_name": "Ram Vilas Kirana Store",
+      "servei_id": "UP53@572608SER639288",
+       "store_key": "UP53@572608_639288STR09052020_160217"
+     }
+  }
+}
+
+<> 2020-05-10T013838.201.json
+
+###
+
+POST http://localhost:8000/api/order-interface-servei/
+Content-Type: application/json
+Authorization: Token 8f892ad53af811dd16d572bc8ec70e7798471cdc
+
+{
+  "action": 12,
+  "order_id": "9924_2490",
+  "servei_id": "UP53@572608SER639288",
+  "items": ["UP53@572608SER639288ITM09052020_161305"]
+}
+
+<> 2020-05-10T125508.403.json
+
+###
+
+POST http://localhost:8000/customer_api/interface/
+Content-Type: application/json
+
+{
+   "customer_phone_number": "9936249924",
+   "action": 39,
+  "delivery_type": "SSU",
+  "cityCode": "UP53",
+  "delivery_required": 1,
+   "customer_stack": {
+     "phone_number": "9936249924",
+     "address": {
+       "address_line_first": "Vindhyavashni Nagar"
+     },
+     "coordinates": {
+       "lat": 26.767841,
+       "long": 83.375482
+     }
+
+   },
+  "clusters": {
+    "UP53@572608SER639288ITM09052020_161305": {
+            "item_id": "UP53@572608SER639288ITM09052020_161305",
+            "name": "Harry Vendal",
+            "price": 242.36,
+           "quantity": 1.0,
+           "measure": "pcs",
+           "unit": 1.0,
+      "store_name": "Ram Vilas Kirana Store",
+      "servei_id": "UP53@572608SER639288",
+       "store_key": "UP53@572608_639288STR09052020_160217"
+     }
+  }
+}
+
+<> 2020-05-10T125438.201.json
+
+###
+
+POST http://localhost:8000/api/order-interface-servei/
+Content-Type: application/json
+Authorization: Token 8f892ad53af811dd16d572bc8ec70e7798471cdc
+
+{
+  "action": 12,
+  "order_id": "9924_1914",
+  "servei_id": "UP53@572608SER639288",
+  "items": ["UP53@572608SER639288ITM09052020_161305"]
+}
+
+<> 2020-05-10T124324.200.json
+
+###
+
+POST http://localhost:8000/api/order-interface-servei/
+Content-Type: application/json
+Authorization: Token 8f892ad53af811dd16d572bc8ec70e7798471cdc
+
+{
+  "action": 12,
+  "order_id": "9924_1914",
+  "servei_id": "UP53@572608SER639288",
+  "items": ["UP53@572608SER639288ITM09052020_161305"]
+}
+
+<> 2020-05-10T124151.500.txt
+
+###
+
+POST http://localhost:8000/api/order-interface-servei/
+Content-Type: application/json
+Authorization: Token 8f892ad53af811dd16d572bc8ec70e7798471cdc
+
+{
+  "action": 12,
+  "order_id": "9924_1914",
+  "servei_id": "UP53@572608SER639288",
+  "items": ["UP53@572608SER639288ITM09052020_161305"]
+}
+
+<> 2020-05-10T123628.500.txt
+
+###
+
+POST http://localhost:8000/customer_api/interface/
+Content-Type: application/json
+
+{
+   "customer_phone_number": "9936249924",
+   "action": 39,
+  "delivery_type": "SSU",
+  "cityCode": "UP53",
+  "delivery_required": 1,
+   "customer_stack": {
+     "phone_number": "9936249924",
+     "address": {
+       "address_line_first": "Vindhyavashni Nagar"
+     },
+     "coordinates": {
+       "lat": 26.767841,
+       "long": 83.375482
+     }
+
+   },
+  "clusters": {
+    "UP53@572608SER639288ITM09052020_161305": {
+            "item_id": "UP53@572608SER639288ITM09052020_161305",
+            "name": "Harry Vendal",
+            "price": 242.36,
+           "quantity": 1.0,
+           "measure": "pcs",
+           "unit": 1.0,
+      "store_name": "Ram Vilas Kirana Store",
+      "servei_id": "UP53@572608SER639288",
+       "store_key": "UP53@572608_639288STR09052020_160217"
+     }
+  }
+}
+
+<> 2020-05-10T123205.201.json
+
+###
+
+POST http://localhost:8000/customer_api/interface/
+Content-Type: application/json
+
+{
+   "customer_phone_number": "9936249924",
+   "action": 39,
+  "delivery_type": "SSU",
+  "cityCode": "UP53",
+  "delivery_required": 1,
+   "customer_stack": {
+     "phone_number": "9936249924",
+     "address": {
+       "address_line_first": "Vindhyavashni Nagar"
+     },
+     "coordinates": {
+       "lat": 26.767841,
+       "long": 83.375482
+     }
+
+   },
+  "clusters": {
+    "UP53@572608SER639288ITM09052020_161305": {
+            "item_id": "UP53@572608SER639288ITM09052020_161305",
+            "name": "Harry Vendal",
+            "price": 242.36,
+           "quantity": 1.0,
+           "measure": "pcs",
+           "unit": 1.0,
+      "store_name": "Ram Vilas Kirana Store",
+      "servei_id": "UP53@572608SER639288",
+       "store_key": "UP53@572608_639288STR09052020_160217"
+     }
+  }
+}
+
+<> 2020-05-10T122729.500.txt
+
+###
+
+POST http://localhost:8000/customer_api/interface/
+Content-Type: application/json
+
+{
+   "customer_phone_number": "9936249924",
+   "action": 39,
+  "delivery_type": "SSU",
+  "cityCode": "UP53",
+  "delivery_required": 1,
+   "customer_stack": {
+     "phone_number": "9936249924",
+     "address": {
+       "address_line_first": "Vindhyavashni Nagar"
+     },
+     "coordinates": {
+       "lat": 26.767841,
+       "long": 83.375482
+     }
+
+   },
+  "clusters": {
+    "UP53@572608SER639288ITM09052020_161305": {
+            "item_id": "UP53@572608SER639288ITM09052020_161305",
+            "name": "Harry Vendal",
+            "price": 242.36,
+           "quantity": 1.0,
+           "measure": "pcs",
+           "unit": 1.0,
+      "store_name": "Ram Vilas Kirana Store",
+      "servei_id": "UP53@572608SER639288",
+       "store_key": "UP53@572608_639288STR09052020_160217"
+     }
+  }
+}
+
+<> 2020-05-10T122649.500.txt
+
+###
+
+POST http://localhost:8000/customer_api/interface/
+Content-Type: application/json
+
+{
+   "customer_phone_number": "9936249924",
+   "action": 39,
+  "delivery_type": "SSU",
+  "cityCode": "UP53",
+  "delivery_required": 1,
+   "customer_stack": {
+     "phone_number": "9936249924",
+     "address": {
+       "address_line_first": "Vindhyavashni Nagar"
+     },
+     "coordinates": {
+       "lat": 26.767841,
+       "long": 83.375482
+     }
+
+   },
+  "clusters": {
+    "UP53@572608SER639288ITM09052020_161305": {
+            "item_id": "UP53@572608SER639288ITM09052020_161305",
+            "name": "Harry Vendal",
+            "price": 242.36,
+           "quantity": 1.0,
+           "measure": "pcs",
+           "unit": 1.0,
+      "servei_id": "UP53@572608SER639288",
+       "store_key": "UP53@572608_639288STR09052020_160217"
+     }
+  }
+}
+
+<> 2020-05-10T122102.500.txt
+
+###
+
+POST http://localhost:8000/customer_api/interface/
+Content-Type: application/json
+
+{
+   "customer_phone_number": "9936249924",
+   "action": 39,
+  "delivery_type": "SSU",
+  "cityCode": "UP53",
+  "delivery_required": 1,
+   "customer_stack": {
+     "phone_number": "9936249924",
+     "address": {
+       "address_line_first": "Vindhyavashni Nagar"
+     },
+     "coordinates": {
+       "lat": 26.767841,
+       "long": 83.375482
+     }
+
+   },
+  "clusters": {
+    "UP53@572608SER639288ITM09052020_161305": {
+            "item_id": "UP53@572608SER639288ITM09052020_161305",
+            "name": "Harry Vendal",
+            "price": 242.36,
+           "quantity": 1.0,
+           "measure": "pcs",
+           "unit": 1.0,
+      "servei_id": "UP53@572608SER639288",
+       "store_key": "UP53@572608_639288STR09052020_160217"
+     }
+  }
+}
+
+<> 2020-05-10T122027.500.txt
+
+###
+
+POST http://localhost:8000/customer_api/interface/
+Content-Type: application/json
+
+{
+   "customer_phone_number": "9936249924",
+   "action": 39,
+  "delivery_type": "SSU",
+  "cityCode": "UP53",
+  "delivery_required": 1,
+   "customer_stack": {
+     "phone_number": "9936249924",
+     "address": {
+       "address_line_first": "Vindhyavashni Nagar"
+     },
+     "coordinates": {
+       "lat": 26.767841,
+       "long": 83.375482
+     }
+
+   },
+  "clusters": {
+     "UP53@572608SER639288": {
+       "items": {
+         "UP53@572608SER639288ITM09052020_161305": {
+            "item_id": "UP53@572608SER639288ITM09052020_161305",
+            "name": "Harry Vendal",
+            "price": 242.36,
+           "quantity": 1.0,
+           "measure": "pcs",
+           "unit": 1.0
+
+         }
+       },
+       "servei_id": "UP53@572608SER639288",
+       "store_key": "UP53@572608_639288STR09052020_160217"
+     }
+  }
+}
+
+<> 2020-05-10T121901.500.txt
+
+###
+
+POST http://localhost:8000/customer_api/interface/
+Content-Type: application/json
+
+{
+   "customer_phone_number": "9936249924",
+   "action": 39,
+  "delivery_type": "SSU",
+  "cityCode": "UP53",
+  "delivery_required": 1,
+   "customer_stack": {
+     "phone_number": "9936249924",
+     "address": {
+       "address_line_first": "Vindhyavashni Nagar"
+     },
+     "coordinates": {
+       "lat": 26.767841,
+       "long": 83.375482
+     }
+
+   },
+  "clusters": {
+     "UP53@572608SER639288": {
+       "items": {
+         "UP53@572608SER639288ITM09052020_161305": {
+            "item_id": "UP53@572608SER639288ITM09052020_161305",
+            "name": "Harry Vendal",
+            "price": 242.36,
+           "quantity": 1.0,
+           "measure": "pcs",
+           "unit": 1.0
+
+         }
+       },
+       "servei_id": "UP53@572608SER639288",
+       "store_key": "UP53@572608_639288STR09052020_160217"
+     }
+  }
+}
+
+<> 2020-05-10T121738.500.txt
+
+###
+
+POST http://localhost:8000/customer_api/interface/
+Content-Type: application/json
+
+{
+   "customer_phone_number": "9936249924",
+   "action": 39,
+  "delivery_type": "SSU",
+  "delivery_required": 1,
+   "customer_stack": {
+     "phone_number": "9936249924",
+     "address": {
+       "address_line_first": "Vindhyavashni Nagar"
+     },
+     "coordinates": {
+       "lat": 26.767841,
+       "long": 83.375482
+     }
+
+   },
+  "clusters": {
+     "UP53@572608SER639288": {
+       "items": {
+         "UP53@572608SER639288ITM09052020_161305": {
+            "item_id": "UP53@572608SER639288ITM09052020_161305",
+            "name": "Harry Vendal",
+            "price": 242.36,
+           "quantity": 1.0,
+           "measure": "pcs",
+           "unit": 1.0
+
+         }
+       },
+       "servei_id": "UP53@572608SER639288",
+       "store_key": "UP53@572608_639288STR09052020_160217"
+     }
+  }
+}
+
+<> 2020-05-10T121710.500.txt
+
+###
+
+POST http://localhost:8000/customer_api/interface/
+Content-Type: application/json
+
+{
+   "customer_phone_number": "9936249924",
+   "action": 39,
+  "delivery_required": 1,
+   "customer_stack": {
+     "phone_number": "9936249924",
+     "address": {
+       "address_line_first": "Vindhyavashni Nagar"
+     },
+     "coordinates": {
+       "lat": 26.767841,
+       "long": 83.375482
+     }
+
+   },
+  "clusters": {
+     "UP53@572608SER639288": {
+       "items": {
+         "UP53@572608SER639288ITM09052020_161305": {
+            "item_id": "UP53@572608SER639288ITM09052020_161305",
+            "name": "Harry Vendal",
+            "price": 242.36,
+           "quantity": 1.0,
+           "measure": "pcs",
+           "unit": 1.0
+
+         }
+       },
+       "servei_id": "UP53@572608SER639288",
+       "store_key": "UP53@572608_639288STR09052020_160217"
+     }
+  }
+}
+
+<> 2020-05-10T121642.500.txt
+
+###
+
+POST http://localhost:8000/api/item-creation/
+Content-Type: application/json
+Authorization: Token 8f892ad53af811dd16d572bc8ec70e7798471cdc
+
+{
+  "servei_id": "UP53@572608SER639288",
+  "store_key" : "UP53@572608_639288STR09052020_160217",
+  "name": "Harry Vendal",
+  "price": 242.36,
+  "images": [],
+  "description": "",
+  "measureParam": "pcs",
+  "unit": 1.0,
+  "prev_cat": "vWgATw_CAT_26042020-131305",
+  "cityCode": "UP53"
+
+
+
+}
+
+<> 2020-05-09T094306.200.json
+
+###
+
+POST http://localhost:80/api/item-creation/
+Content-Type: application/json
+
+{}
+
+###
+
+POST http://localhost:80/api/item
+Content-Type: application/json
+
+{}
+
+###
+
+POST http://localhost:8000/api/new-store/
+Content-Type: application/json
+Authorization: Token 8f892ad53af811dd16d572bc8ec70e7798471cdc
+
+{
+  "servei_id": "UP53@572608SER639288",
+  "store_name": "Ram Vilas Kirana Store",
+  "creators_profession": "Othr",
+  "official_support": {},
+  "store_category": ["sjEszA_CAT_26042020-131206"],
+  "opening_time": "10:24:48",
+  "closing_time": "22:24:48",
+  "contacts": {},
+  "address": {
+    "address_line_first": "Navin Block",
+    "address_line_second": "Araa Jila",
+    "coordinates": {
+      "lat": 26.765312,
+      "long": 83.372739
+    }
+  },
+
+    "descriptions": {}
+
+
+}
+
+<> 2020-05-09T093217.201.json
+
+###
+
+POST http://localhost:8000/api/new-store/
+Content-Type: application/json
+Authorization: Token 8f892ad53af811dd16d572bc8ec70e7798471cdc
+
+{
+  "servei_id": "UP53@572608SER639288",
+  "store_name": "Ram Vilas Kirana Store",
+  "creators_profession": "Othr",
+  "official_support": {},
+  "store_category": ["sjEszA_CAT_26042020-131206"],
+  "opening_time": "10:24:48",
+  "closing_time": "22:24:48",
+  "contacts": {},
+  "address": {
+    "address_line_first": "Navin Block",
+    "address_line_second": "Araa Jila",
+    "coordinates": {
+      "lat": 26.765312,
+      "long": 83.372739
+    }
+  },
+
+    "descriptions": {}
+
+  }
+}
+
+<> 2020-05-09T093126.500.txt
+
+###
+
+POST http://localhost:8000/api/new-store/
+Content-Type: application/json
+Authorization: Token 8f892ad53af811dd16d572bc8ec70e7798471cdc
+
+{
+  "servei_id": "UP53@572608SER639288",
+  "store_name": "Ram Vilas Kirana Store",
+  "creators_profession": "Othr",
+  "official_support": {},
+  "store_category": ["sjEszA_CAT_26042020-131206"],
+  "opening_time": "10:24:48",
+  "closing_time": "22:24:48",
+  "contacts": {},
+  "address": {
+    "address_line_first": "Navin Block",
+    "address_line_second": "Araa Jila",
+    "coordinates": {
+      "lat": 26.765312,
+      "long": 83.372739
+    },
+
+    "descriptions": {}
+
+  }
+}
+
+<> 2020-05-09T093048.500.txt
+
+###
+
+POST http://localhost:8000/api/new-store/
+Content-Type: application/json
+Authorization: Token 8f892ad53af811dd16d572bc8ec70e7798471cdc
+
+{
+  "servei_id": "UP53@572608SER639288",
+  "store_name": "Ram Vilas Kirana Store",
+  "creators_profession": "Othr",
+  "official_support": {},
+  "store_category": ["sjEszA_CAT_26042020-131206"],
+  "contacts": {},
+  "address": {
+    "address_line_first": "Navin Block",
+    "address_line_second": "Araa Jila",
+    "coordinates": {
+      "lat": 26.765312,
+      "long": 83.372739
+    },
+    "opening_time": "10:24:48",
+    "closing_time": "22:24:48",
+    "descriptions": {}
+
+  }
+}
+
+<> 2020-05-09T092903.500.txt
+
+###
+
+POST http://localhost:8000/api/accountcreate/suit/
+Content-Type: application/json
+
+{
+  "aadhar": "367572608997",
+  "relation": "002",
+  "pin_code": "273001",
+  "phone_number" : "6392886167",
+  "password": "Piyush@103",
+  "first_name": "Piyush",
+  "last_name": "Jaiswal",
+  "gender": "Male",
+  "address": {
+    "address_line_first": "Abara Ka Dabra Nagar",
+    "address_line_second": "Juhu Chaupati",
+    "city": "Gorakhpur"
+  },
+  "coordinates": {
+    "lat": 26.763866,
+    "long": 83.377804
+  }
+}
+
+<> 2020-05-09T091947.202.json
+
+###
+
+POST http://localhost:8000/api/accountcreate/suit/
+Content-Type: application/json
+
+{
+  "aadhar": "367572608997",
+  "relation": "002",
+  "pin_code": "273001",
+  "phone_number" : "6392886167",
+  "password": "Piyush@103",
+  "first_name": "Piyush",
+  "last_name": "Jaiswal",
+  "gender": "Male",
+  "address": {
+    "address_line_first": "Abara Ka Dabra Nagar",
+    "address_line_second": "Juhu Chaupati",
+    "city": "Gorakhpur"
+  },
+  "coordinates": {
+    "lat": 26.763866,
+    "long": 83.377804
+  }
+}
+
+<> 2020-05-09T091658.202.json
+
+###
+
+POST http://localhost:8000/api/accountcreate/suit/
+Content-Type: application/json
+
+{
+  "aadhar": "367572608997",
+  "relation": "002",
+  "pin_code": "273001",
+  "phone_number" : "6392886167",
+  "password": "Piyush@103",
+  "first_name": "Piyush",
+  "last_name": "Jaiswal",
+  "gender": "Male",
+  "address": {
+    "address_line_first": "Abara Ka Dabra Nagar",
+    "address_line_second": "Juhu Chaupati",
+    "city": "Gorakhpur"
+  },
+  "coordinates": {
+    "lat": 26.763866,
+    "long": 83.377804
+  }
+}
+
+<> 2020-05-09T091141.500.txt
+
+###
+
+POST http://localhost:8000/pilot_api/updates/
+Content-Type: application/json
+Authorization: Token df3bb73a14278c6efc40cd24ac6f44d9eda2933e
+
+{
+  "order_id": "6244_6862",
+  "action": "FOLLOW"
+}
+
+###
+
+POST http://localhost:8000/pilot_api/updates/
+Content-Type: application/json
+Authorization: Token df3bb73a14278c6efc40cd24ac6f44d9eda2933e
+
+{
+  "order_id": "6244_6862",
+  "action": "FOLLOW"
+}
+
+###
+
+POST http://localhost:8000/pilot_api/updates/
+Content-Type: application/json
+Authorization: Token df3bb73a14278c6efc40cd24ac6f44d9eda2933e
+
+{
+  "order_id": "6244_6862",
+  "action": "FOLLOW"
+}
+
+###
+
+GET http://localhost:8000/pilot_api/orders/?pilot_id=UP53@572608DE639288
+Accept: */*
+Cache-Control: no-cache
+Authorization: Token df3bb73a14278c6efc40cd24ac6f44d9eda2933e
+
+<> 2020-05-09T044615.200.json
+
+###
+
+GET http://localhost:8000/pilot_api/orders/
+Accept: */*
+Cache-Control: no-cache
+Authorization: Token df3bb73a14278c6efc40cd24ac6f44d9eda2933e
+
+<> 2020-05-09T044520.500.txt
+
+###
+
+GET http://localhost:8000/pilot_api.orders/
+Accept: */*
+Cache-Control: no-cache
+Authorization: Token df3bb73a14278c6efc40cd24ac6f44d9eda2933e
+
+<> 2020-05-09T044503.404.html
+
+###
+
+GET http://localhost:8000/pilot_api.orders/
+Accept: */*
+Cache-Control: no-cache
+Authorization: Token df3bb73a14278c6efc40cd24ac6f44d9eda2933e
+
+###
+

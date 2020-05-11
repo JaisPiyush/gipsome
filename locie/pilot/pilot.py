@@ -1,22 +1,20 @@
-from ..models import Pilot,Account,Order,Token,MobileDevice,PickDropOrder,Servei,Store,Customer,CityCode
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.permissions import AllowAny,IsAuthenticated
-from rest_framework.authentication import TokenAuthentication
-from ..gadgets.serverOps import pilot_id_creatore
-from django.db.models import Q
-from ..customer.customer_serializer import PickDropOrderSerializer
-from .pilot_manager import PilotManager
-from ..serializers import PilotSerializer
-from django.contrib.gis.geos.point import Point
-from random import randint
-from ..tdmos.tdmos import TDMOSystem,WORKING,CREATED,FINISHED,FAILED
-from ..gadgets.rpmns import API_KEY
 import json
-import math
-from .pilot_serializer import *
+from random import randint
 
+from django.contrib.gis.geos.point import Point
+from django.db.models import Q
+from rest_framework import status
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from .pilot_manager import PilotManager
+from .pilot_serializer import *
+from ..customer.customer_serializer import PickDropOrderSerializer
+from ..gadgets.serverOps import pilot_id_creatore
+from ..models import Pilot, Account, Order, Token, MobileDevice, PickDropOrder, CityCode
+from ..tdmos.tdmos import TDMOSystem, WORKING, FINISHED, FAILED, SERVED
 
 
 class OtpPulse:
@@ -96,31 +94,6 @@ class PilotCreate(APIView):
 
 
 
-        
-
-        
-            
-    
-
-class PilotLogin(APIView):
-    permission_classes = [AllowAny]
-
-    def post(self, request, format=None):
-        data = json.loads(request.body)
-        account = Account.objects.filter(aadhar=data['aadhar'])
-        if account:
-            account = account.first()
-            if account.check_password(data['password']):
-                device = MobileDevice.objects.get_or_create(locie_partner=account.account_id,partnership='003')[0]
-                device.registration_id = data['phone_token']
-                token = Token.objects.get(user=account)
-                return Response({'token':token.key,"pilot_id":account.account_id},status=status.HTTP_200_OK)
-            else:
-                return Response({},status=status.HTTP_401_UNAUTHORIZED)
-        else:
-            return Response({},status=status.HTTP_404_NOT_FOUND)
-
-
 class PilotPickOrders(APIView):
     permission_classes = [AllowAny]
 
@@ -144,7 +117,7 @@ class PilotOrderUpdate(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
-    def post(self,request,format=None):
+    def post(self, request, format=None):
         """
           Possible actions are follow, pick, drop 
 
@@ -160,6 +133,11 @@ class PilotOrderUpdate(APIView):
         data = json.loads(request.body)
         order = Order.objects.get(order_id=data['order_id'])
         if data['action'] == 'FOLLOW':
+            pilot = Pilot.objects.get(pilot_id=data['pilot_id'])
+            pilot.coordinates = Point(data['coordinates']['lat'],data['coordinates']['long'])
+            pilot.save()
+            order.pilot_cluster[pilot.pilot_id]['coordinates'] = data['coordinates']
+            order.save()
             returning_data = PilotManager(order.order_id).next_task()
             return Response(returning_data,status=status.HTTP_200_OK)
         elif data['action'] == 'PICK':
@@ -168,12 +146,13 @@ class PilotOrderUpdate(APIView):
             # if SSU servei -> customer, add id to picked_list and if type is SERV set status to SERVED
             # pilot coordinates are updated every time
             pilot_id = data['pilot_id']
+
             pilot = Pilot.objects.get(pilot_id=pilot_id)
             pilot.coordinates = Point(data['coordinates']['lat'],data['coordinates']['long'])
             pilot.save()
             order.pilot_cluster[pilot_id]['coordinates'] = data['coordinates']
             order.save()
-            if order.delivery_type == 'UDS' and len(order.picked_list) != len(order.sender_list):
+            if order.delivery_type == 'UDS' and len(order.picked_list) != len(order.senders_list):
                 if len(order.pilot_cluster.keys()) == 1:
                     order.picked_list.append(data['sender_id'])
                     order.save()
@@ -185,14 +164,14 @@ class PilotOrderUpdate(APIView):
                     order.save()
                     returning_data = PilotManager(order.order_id).next_task()
                     return Response(returning_data,status=status.HTTP_200_OK)
-            elif order.delivery_type == 'SSU' and len(order.picked_list) != len(order.sender_list):
+            elif order.delivery_type == 'SSU' and len(order.picked_list) != len(order.senders_list):
                 # Pick from servei and mark served
                 order.picked_list.append(data['sender_id'])
-                order.final_servei_cluster[data['servei_id']]['status'] = SERVED
+                order.final_servei_cluster[data['sender_id']]['status'] = SERVED
                 order.save()
                 returning_data = PilotManager(order.order_id).next_task()
                 return Response(returning_data,status=status.HTTP_200_OK)
-            elif order.delivery_type == 'PAD' and len(order.picked_list) != len(order.sender_list):
+            elif order.delivery_type == 'PAD' and len(order.picked_list) != len(order.senders_list):
                 order.picked_list.append(data['sender_id'])
                 order.save()
                 returning_data = PilotManager(order.order_id).next_task()
@@ -215,17 +194,18 @@ class PilotOrderUpdate(APIView):
             order.save()
             if order.delivery_type == 'UDS':
                 if len(order.pilot_cluster.keys()) == 1:
-                    # Droping to servei's after which pilot's job will demise, but before that , we have to check that len of droped == receiver after drop 
-                    # if yes than set pilot free and global status to WORKING 
+                    # Droping to servei's after which pilot's job will demise, but before that ,
+                    # we have to check that len of droped == receiver after drop
+                    # if yes than set pilot free and global status to WORKING
                     order.droped_list.append(data['receiver_id'])
                     order.final_servei_cluster[data['receiver_id']]['status'] = WORKING
                     order.save()
                     if len(order.droped_list) == len(order.receivers_list):
                         TDMOSystem(order).status_setter(WORKING)
                         order.save()
-                        return Response({"action":"finish","order_id":order.order_id},status=status.HTTP_204_NO_CONTENT)
+                        return Response({"action": "finish","order_id":order.order_id},status=status.HTTP_204_NO_CONTENT)
                     else:
-                        returning_data['secondary'] = PilotManager(order.order_id).next_task()
+                        returning_data = PilotManager(order.order_id).next_task()
                         return Response(returning_data,status=status.HTTP_200_OK)
                 elif len(order.pilot_cluster.dict_keys()) > 1:
                     # Droping back to customer 
@@ -255,11 +235,50 @@ class PilotNewOrder(APIView):
             return Response({"orders":serialized.data()},status=status.HTTP_200_OK)
         else:
             return Response({"orders":[]},status=status.HTTP_200_OK)
-                        
 
+
+class PilotLoginView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self,request, format=None):
+        data = json.loads(request.body)
+        pilot = Pilot.objects.filter(aadhar = data['aadhar'])
+        if pilot:
+            pilot = pilot.first()
+            account = Account.objects.get(account_id=pilot.pilot_id)
+            if account.check_password(data['password']):
+                pilot.coordinates = Point(data['coordinates']['lat'],data['coordinates']['long'])
+                pilot.save()
+                device = MobileDevice.objects.get_or_create(locie_partner=pilot.pilot_id,partnership='003')[0]
+                device.registration_id = data['phone_token']
+                device.save()
+                token = Token.objects.get(user=account)
+                return Response({
+                    "token":token.key,
+                    "pilot_id":pilot.pilot_id,
+                    "aadhar":data['aadhar']
+                },status=status.HTTP_202_ACCEPTED)
+            else:
+                return Response({},
+                                status=status.HTTP_403_FORBIDDEN
+                                )
+        else:
+            return Response({},
+                            status=status.HTTP_404_NOT_FOUND)
                 
 
 
+class PilotPhoneToken(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self,request, format=None):
+        data = json.loads(request.POST)
+        device = MobileDevice.objects.get_or_create(locie_partner=data['pilot_id'],partnership='003')
+        device = device[0]
+        device.registration_id = data['phone_token']
+        device.save()
+        return Response({},status=status.HTTP_202_ACCEPTED)
             
 
                 

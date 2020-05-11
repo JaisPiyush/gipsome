@@ -22,13 +22,7 @@ from django.db.models import Q
 
 
 
-def position(coordinates_id: str):
-    return Coordinates.objects.get(coordinates_id = coordinates_id).position
 
-def set_positon(coord_id,data:dict):
-    coord = Coordinates.objects.get(coordinates_id = coord_id)
-    coord.position = Point(float(data['lat']),float(data['long']))
-    coord.save()
 
 
 class CheckConnection(APIView):
@@ -160,14 +154,11 @@ class CreateStoreView(APIView):
             servei.store_key = store.store_key
             servei.save()
             if 'coordinates' in data['address'].keys():
-                coords = Coordinates.objects.create(coordinates_id=coord_id_generator(store.cityCode, store.store_key),
-                                 relation='904',
-                                 position=Point(float(data['address']['coordinates']['latitude']),float(data['address']['coordinates']['longitude'])))
-                store.coordinates_id = coords.coordinates_id
+                store.coordinates = Point(data['address']['coordinates']['lat'],data['address']['coordinates']['long'])
             store.save()
 
             # Creating Publytics
-            publytics = Publytics.objects.filter(reference_id=store.store_key)
+            publytics = Publytics.objects.filter(reference_id= store.store_key)
             if not publytics:
                 publytics = Publytics.objects.create(pub_id = f'pub-{token_urlsafe(6)}',reference_id=store.store_key)           
 
@@ -366,8 +357,7 @@ class ItemCreateView(APIView):
         item.servei_id = data['servei_id']
         item.allowed = True
         item.price = data['price']
-        item.effective_price = data['effective_price']
-        item.images = [image for image in data['images'] if image is not '@']
+        item.images = [image for image in data['images'] if image is not '@' and image is not '']
         item.description = data['description']
         item.measure_param = data['measureParam']
         item.unit = data['unit']
@@ -379,8 +369,10 @@ class ItemCreateView(APIView):
         item.pick_type = category.pick_type
         item.prev_cat = data['prev_cat']
         item.father_cat = category.father_cat
-        item.variants = data['variants']
-        item.required_desc = data['requirments']
+        if "variants" in data.keys():
+            item.variants = data['variants']
+        if "requirements" in data.keys():
+            item.required_desc = data['requirments']
         item.cityCode = data['cityCode']
         if 'default_item_id' in data.keys():
             item.default_item_id = data['default_item_id']

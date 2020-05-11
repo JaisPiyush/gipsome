@@ -126,14 +126,7 @@ DATABASES = {
         'USER':'postgres',
         'PASSWORD':'piyush@103'if gethostname() == 'jarden' else 'krispi@103904'
     }
-    # 'default': {
-    #     'ENGINE': 'django.contrib.gis.db.backends.postgis',
-    #     'NAME': 'gipsomedb',
-    #     'HOST':'localhost',
-    #     'PORT':'5432',
-    #     'USER':'postgres',
-    #     'PASSWORD':'krispi@103904' 
-    # }
+
 }
 
 
