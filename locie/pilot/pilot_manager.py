@@ -180,7 +180,7 @@ class PilotManager:
         returning_data['primary'] = {
                 "order_id": order.order_id,
                 "locie_transfer": order.locie_transfer,
-                "loci_reversion": order.locie_reversion,
+                "locie_reversion": order.locie_reversion,
                 "otp": order.otp,
                 "net_charge": math.ceil(order.extra_charge['delivery_charge']/2) if order.delivery_type == 'UDS' else order.extra_charges['delivery_charge'],
                 "delivery_type": order.delivery_type,

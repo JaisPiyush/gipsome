@@ -1,19 +1,19 @@
+import datetime
+import json
+from secrets import token_urlsafe
+
+from django.db.models import Q
+from rest_framework import status
 from rest_framework.authentication import TokenAuthentication
-from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from rest_framework.views import Response
-from rest_framework import status
-from .serializers import AccountCreationSerializer
-from .serializers import *
+
+from .gadgets.serverOps import storeKeyGenerator, item_id_generator
 from .models import *
-import datetime
-from .tdmos.tdmos import CREATED,DECLINED,WORKING,FINISHED,PENDING,SERVED,CREATE,CANCEL,FAILED
-import time
-from secrets import token_urlsafe
-from .gadgets.serverOps import storeKeyGenerator, item_id_generator, OtpHemdal, dtime_diff, coord_id_generator
-import json
-from django.db.models import Q
+from .serializers import *
+from .tdmos.tdmos import SERVED, FAILED
+
 
 # Create your views here.
 
