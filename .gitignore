@@ -1,7 +1,8 @@
 locie/__pycache__/
-locie/migrations/
+locie/migrations/__pycache__/
 locie_server/__pycache__/
 customer/__pycache__/
 gadgets/__pycache__/
 pilot/__pycache__/
 tdmos/__pycache__/
+.idea/

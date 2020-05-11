@@ -1,3 +1,88 @@
+POST https://gipsome.gipsome-6392-longform-periodic-sigmadynamic-portal-atrocious.in/pilot_api/create/
+Content-Type: application/json
+
+{
+ "pin_code": "273001",
+  "aadhar": "367572608997",
+  "relation": "003",
+  "password": "piyush@103",
+  "phone_number": "6392886167",
+  "first_name": "Piyush",
+  "last_name": "Jaiswal",
+  "coordinates": {
+    "lat": 26.75226,
+    "long": 83.36546
+  },
+  "address": {
+    "address_line_first": "H.no.4, VindhyaVashni Nagar Colony",
+    "address_line_second": "Bank Road",
+    "city": "Gorakhpur",
+    "pin_code": "273001"
+  },
+  "image": ""
+
+}
+
+<> 2020-05-11T105203.500.txt
+
+###
+
+POST http://gipsome.gipsome-6392-longform-periodic-sigmadynamic-portal-atrocious.in/pilot_api/create/
+Content-Type: application/json
+
+{
+ "pin_code": "273001",
+  "aadhar": "367572608997",
+  "relation": "003",
+  "password": "piyush@103",
+  "phone_number": "6392886167",
+  "first_name": "Piyush",
+  "last_name": "Jaiswal",
+  "coordinates": {
+    "lat": 26.75226,
+    "long": 83.36546
+  },
+  "address": {
+    "address_line_first": "H.no.4, VindhyaVashni Nagar Colony",
+    "address_line_second": "Bank Road",
+    "city": "Gorakhpur",
+    "pin_code": "273001"
+  },
+  "image": ""
+
+}
+
+<> 2020-05-11T105041.301.html
+
+###
+
+POST http://localhost:8000/pilot_api/create/
+Content-Type: application/json
+
+{
+ "pin_code": "273001",
+  "aadhar": "367572608997",
+  "relation": "003",
+  "password": "piyush@103",
+  "phone_number": "6392886167",
+  "first_name": "Piyush",
+  "last_name": "Jaiswal",
+  "coordinates": {
+    "lat": 26.75226,
+    "long": 83.36546
+  },
+  "address": {
+    "address_line_first": "H.no.4, VindhyaVashni Nagar Colony",
+    "address_line_second": "Bank Road",
+    "city": "Gorakhpur",
+    "pin_code": "273001"
+  },
+  "image": ""
+
+}
+
+###
+
 POST http://localhost:8000/pilot_api/updates/
 Content-Type: application/json
 Authorization: Token df3bb73a14278c6efc40cd24ac6f44d9eda2933e
