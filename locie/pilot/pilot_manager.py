@@ -1,8 +1,8 @@
 import math
 
 from django.contrib.gis.geos.point import Point
-
-from ..models import Order, Pilot, Servei, Store
+from ..gadgets.rpmns import API_KEY
+from ..models import Order, Pilot, Servei, Store, MobileDevice
 
 
 class PilotManager:
@@ -55,10 +55,10 @@ class PilotManager:
 
 
             self.order.save()
-            # device = MobileDevice.objects.get(locie_partner=final_pilot.pilot_id)
-            # device.send_message('New Order', f'New Order is assigned to you',
-                                # data={'click_action': 'FLUTTER_NOTIFICATION_CLICK', 'data': {
-                                    # 'type': 'new-order', 'order_id': self.order_id}}, api_key=API_KEY)
+            device = MobileDevice.objects.get(locie_partner=final_pilot.pilot_id)
+            device.send_message('New Order', f'New Order is assigned to you',
+                                data={'click_action': 'FLUTTER_NOTIFICATION_CLICK', 'data': {
+                                    'type': 'new-order', 'order_id': self.order_id}}, api_key=API_KEY)
             
             
         else:
