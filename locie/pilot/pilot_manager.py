@@ -229,21 +229,21 @@ class PilotManager:
     
     def sumarize_customer(self,customer_id):
         returnable_dict ={
-            "items":[]
+            "items":{}
         }
         price = 0.0
         returnable_dict['entity'] = 'RECV'
         if self.order.delivery_type == 'SSU':
             price = self.order.net_price
             for value in self.order.final_servei_cluster.values():
-                returnable_dict['items'] += value['items']
+                returnable_dict['items'].update(value['items'])
         elif self.order.delivery_type == 'UDS' and len(self.order.pilot_cluster.keys()) == 1:
             price = math.ceil(self.order.extra_charges['delivery_charge']/2)
             returnable_dict['entity'] = 'SEND'
         elif self.order.delivery_type == 'UDS' and len(self.order.pilot_cluster.keys()) > 1:
             price = self.order.price + math.ceil(self.order.extra_charges['delivery_charge']/2)
             for value in self.order.final_servei_cluster.values():
-                returnable_dict['items'] += value['items']
+                returnable_dict['items'].update(value['items'])
             returnable_dict['entity'] = 'RECV'
         returnable_dict['id'] = customer_id
         returnable_dict['phone_number'] = self.order.customer_stack['phone_number']
