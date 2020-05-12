@@ -12,10 +12,10 @@ https://docs.djangoproject.com/en/3.0/ref/settings/
 
 import os
 from socket import gethostname
+
 # import getpass
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.0/howto/deployment/checklist/
@@ -26,13 +26,12 @@ SECRET_KEY = '%^*2esaf@ou%psce0oc%^tqw@)_55_=f#0wr24-q=ktx^!_zi3'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["*"]#['ec2-13-126-115-213.ap-south-1.compute.amazonaws.com', '13.126.115.213',]
+ALLOWED_HOSTS = ["*"]  # ['ec2-13-126-115-213.ap-south-1.compute.amazonaws.com', '13.126.115.213',]
 
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20
 }
-
 
 # Application definition
 
@@ -56,18 +55,14 @@ PROJECT_APPS = [
     'locie.apps.LocieConfig',
 ]
 
-
-
-#AUTH USER MODEL
+# AUTH USER MODEL
 AUTH_USER_MODEL = 'locie.Account'
-
-
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
-    'DEFAULT_AUTHENTICATION_CLASSES':[
+    'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
     ]
 }
@@ -90,7 +85,7 @@ ROOT_HOSTCONF = 'locie_server.hosts'
 DEFAULT_HOST = 'locie_server'
 SECURE_SSL_REDIRECT = False
 CORS_ORIGIN_ALLOW_ALL = True
-CORS_ORIGIN_WHITELIST =[
+CORS_ORIGIN_WHITELIST = [
     "http://localhost:3000",
     "https://locie.herokuapp.com"
 ]
@@ -98,7 +93,7 @@ CORS_ORIGIN_WHITELIST =[
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR+"/templates",],
+        'DIRS': [BASE_DIR + "/templates", ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -113,7 +108,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'locie_server.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
 
@@ -121,14 +115,13 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
         'NAME': 'imango' if gethostname() == 'jarden' else 'gipsomedb',
-        'HOST':'localhost',
-        'PORT':'5432',
-        'USER':'postgres',
-        'PASSWORD':'piyush@103'if gethostname() == 'jarden' else 'krispi@103904'
+        'HOST': 'localhost',
+        'PORT': '5432',
+        'USER': 'postgres',
+        'PASSWORD': 'piyush@103' if gethostname() == 'jarden' else 'krispi@103904'
     }
 
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/3.0/ref/settings/#auth-password-validators
@@ -148,7 +141,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/3.0/topics/i18n/
 
@@ -162,13 +154,13 @@ USE_L10N = True
 
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
-ADMIN_STATIC = ['/home/jarden/gipsomeserver/lib/python3.6/site-packages/django/contrib/admin/static'] if gethostname() != 'jarden' else []
+ADMIN_STATIC = [
+    '/home/jarden/gipsomeserver/lib/python3.6/site-packages/django/contrib/admin/static'] if gethostname() != 'jarden' else []
 
 STATICFILES_DIRS = [] + ADMIN_STATIC
 
@@ -177,3 +169,87 @@ CELERY_RESULT_BACKEND = 'db+postgresql://postgres:piyush@103@localhost:5432/iman
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
+
+ADMINS = (
+    ("Piyush", "locieteamdeveloper@gmail.com")
+)
+
+MAILER_LIST = ['locieteam2019@gmail.com']
+
+EMAIL_HOST = 'smtp.google.com'
+
+EMAIL_HOST_USER = 'Piyush'
+
+EMAIL_HOST_PASSWORD = 'krispi@103904'
+
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+
+DEFAULT_FROM_EMAIL = 'jardenjaiswal@gmail.com'
+
+LOGGING = {
+    'version': 1,
+
+    'disable_existing_loggers': True,
+
+    'formatters': {
+
+        'verbose': {
+
+            'format': '%(levelname)s [%(asctime)s] %(module)s %(message)s'
+
+        },
+
+    },
+
+    'handlers': {
+
+        'console': {
+
+            'level': 'DEBUG',
+
+            'class': 'logging.StreamHandler',
+
+            'formatter': 'simple'
+
+        },
+
+        'file': {
+
+            'class': 'logging.handlers.RotatingFileHandler',
+
+            'formatter': 'verbose',
+
+            'filename': '/var/www/logs/ibiddjango.log',
+
+            'maxBytes': 1024000,
+
+            'backupCount': 3,
+
+        },
+
+        'mail_admins': {
+
+            'level': 'ERROR',
+
+            'class': 'django.utils.log.AdminEmailHandler'
+
+        }
+
+    },
+
+    'loggers': {
+
+        'django': {
+
+            'handlers': ['file', 'console','mail_admins'],
+
+'propagate': True,
+
+'level': 'DEBUG',
+
+},
+
+}
+
+}
