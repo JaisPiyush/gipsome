@@ -55,8 +55,10 @@ class PilotManager:
 
 
             self.order.save()
-            device = MobileDevice.objects.get(locie_partner=final_pilot.pilot_id)
-            device.send_message('New Order', f'New Order is assigned to you',
+            device = MobileDevice.objects.filter(locie_partner=final_pilot.pilot_id)
+            if device:
+                device = device.first()
+                device.send_message('New Order', f'New Order is assigned to you',
                                 data={'click_action': 'FLUTTER_NOTIFICATION_CLICK', 'data': {
                                     'type': 'new-order', 'order_id': self.order_id}}, api_key=API_KEY)
             
@@ -98,8 +100,6 @@ class PilotManager:
             pilot_coords = self.order.pilot_stack[-1]['coordinates']
             pilot_coord = Point(pilot_coords['lat'],pilot_coords['long'])
             customer_coord = Point(customer_coords['lat'],customer_coords['long'])
-            del pilot_coords
-            del customer_coords
             pointers =[]
             for serveiId in servei_list:
                 serve_coordinates = Servei.objects.get(servei_id=serveiId).coordinates
@@ -111,11 +111,11 @@ class PilotManager:
                 pointers.sort(reverse=True,key=param)
                 self.order.route_planner = pointers
 
-        elif cust_to_servei:
+        elif cust_to_servei :
             # first is customer and last is the farthest servei from customer
             # origin is customer and destin is farthest servei
             # Pick or drop updates coordinates of pilot  every time
-            servei_list = self.final_servei_cluster.keys()
+            servei_list = self.order.final_servei_cluster.keys()
             farthest_servei,distance = self.fartest_point(servei_list,self.order.customer_stack['coordinates'])
             farthest_coods = Servei.objects.get(servei_id=farthest_servei).coordinates
             customer_coord = Point(self.order.customer_stack['coordinates']['lat'],self.order.customer_stack['coordinates']['long'])

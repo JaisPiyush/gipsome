@@ -392,8 +392,10 @@ class TDMOSystem:
           Notify every servei about orders and start reactore only if delivery required
         """
         for servei_id in self.order.servei_cluster.keys():
-            device = MobileDevice.objects.get(locie_partner=servei_id)
-            device.send_message('New Order', 'New Order has arrived for you', data={'click_action': 'FLUTTER_NOTIFICATION_CLICK',
+            device = MobileDevice.objects.filter(locie_partner=servei_id)
+            if device:
+                device = device.first()
+                device.send_message('New Order', 'New Order has arrived for you', data={'click_action': 'FLUTTER_NOTIFICATION_CLICK',
                                                                                     'data': {'type': 'new-order', 'order_id': self.order.order_id,
                                                                                              'cluster': [item['item_id'] for item in self.order.servei_cluster[servei_id]['items']],
                                                                                              'total_quantity': self.order.servei_cluster[servei_id]['quantity'], 'net_price': self.order.servei_cluster['net_price'],
@@ -506,20 +508,26 @@ class TDMOSystem:
         if self.order.status != FAILED and self.order.delivery_type == 'SSU' and force == False:
             self.status_setter(FAILED)
             for servei in self.order.final_servei_cluster.keys():
-                device = MobileDevice.objects.get(locie_partner=servei)
-                device.send_message('Order Cancelled', f'Order has been Cancelled!. Order ID:{self.order.order_id}',
+                device = MobileDevice.objects.filter(locie_partner=servei)
+                if device:
+                    device = device.first()
+                    device.send_message('Order Cancelled', f'Order has been Cancelled!. Order ID:{self.order.order_id}',
                                     data={'click_action': 'FLUTTER_NOTIFICATION_CLICK', 'data': {
                                         'type': 'order_cancel', 'order_id': self.order.order_id, 'status': self.order.status}}, api_key=API_KEY)
-            device = CustomerDevice.objects.get(
+            device = CustomerDevice.objects.filter(
                 customer_id=self.order.customer_id)
-            device.send_message('Order Cancelled', f'Your Order with Order Id - {self.order.order_id} has been Cancelled',
+            if device:
+                device = device.first()
+                device.send_message('Order Cancelled', f'Your Order with Order Id - {self.order.order_id} has been Cancelled',
                                 data={'click_action': 'FLUTTER_NOTIFICATION_CLICK', 'data': {
                                     'type': 'order_update', 'order_id': self.order.order_id, 'status': self.order.status}}, api_key=API_KEY)
 
             if self.order.pilot_cluster:
                 pilot_id = self.order.pilot_cluster.keys()[-1]
-                device = MobileDevice.objects.get(locie_partner=pilot_id)
-                device.send_message('Order Cancelled', f'Order has been Cancelled!. Order ID:{self.order.order_id}',
+                device = MobileDevice.objects.filter(locie_partner=pilot_id)
+                if device:
+                    device = device.first()
+                    device.send_message('Order Cancelled', f'Order has been Cancelled!. Order ID:{self.order.order_id}',
                                     data={'click_action': 'FLUTTER_NOTIFICATION_CLICK', 'data': {
                                         'type': 'order_cancel', 'order_id': self.order.order_id, 'status': self.order.status}}, api_key=API_KEY)
         elif force and reason:
