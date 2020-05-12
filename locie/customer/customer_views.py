@@ -1,22 +1,21 @@
 # from django.shortcuts import render, HttpResponse
-from rest_framework.authentication import TokenAuthentication
 # from django.template import Context, Template
-from rest_framework.permissions import IsAuthenticated, AllowAny
+import datetime
+import json
+from math import ceil
+from secrets import token_urlsafe
+
+from django.db.models import Q
+from rest_framework import status
+from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 from rest_framework.views import Response
-from rest_framework import status
+
 from .customer_serializer import *
 from ..models import *
-import datetime
-import time
-from secrets import token_urlsafe
-import json
-from django.db.models import Q
-from ..serializers import CityCodeSerializer
-from ..tdmos.tdmos import API_KEY
 from ..pilot.pilot import PilotManager
+from ..serializers import CityCodeSerializer
 from ..tdmos.tdmos import order_id_generator
-from math import ceil
 
 
 def variant_describe(item):
@@ -303,20 +302,17 @@ class CustomerAddmission(APIView):
                 )
                 account.set_password(data['password'])
                 account.save()
-                print(account.account_id)
                 
                 if account:
                     token = Token.objects.create(user=account)
                     customer = Customer.objects.create(customer_id=data['customer_id'])
-                    coordinates = Coordinates.objects.get_or_create(
-                        coordinates_id=account.account_id)[0]
                     for key in data.keys():
                         if key == 'gender':
                             customer.gender = request['gender']
                         elif key == 'address':
                             customer.address = request['address']
-                        elif key == 'lat':
-                            customer.coordinates_id = coordinates.coordinates_id
+                        elif key == 'coordinates':
+                            customer.coordinates = Point(data['coordinates']['lat'],data['coordinates']['long'])
                         elif key == 'extras':
                             customer.extras = request['extras']
                         elif key == 'dob':
@@ -362,24 +358,6 @@ class PickDropOrderView(APIView):
         else:
             order.cost = 40.0
         order.save()
-        device = MobileDevice.objects.all().first()
-        device.send_message('New Order', 'New Order has arrived for you', data={'click_action': 'FLUTTER_NOTIFICATION_CLICK',
-                                                                                    'data': {
-                                                                                        "pickDrop":1,
-                                                                                        "order_id":order.id,
-                                                                                        "sender_stack":{
-                                                                                            "name":order.sender_name,
-                                                                                            "phone_number":order.sender_phone_number,
-                                                                                            "address":order.sender_address
-                                                                                        } ,
-                                                                                        "receiver_stack":{
-                                                                                            "name":order.receiver_stack['name'],
-                                                                                            "phone_number":order.receiver_stack['phone_number'],
-                                                                                            "address":order.receiver_stack['address']
-                                                                                        },
-                                                                                        "payee":order.payee
-
-                                                                                    }}, api_key=API_KEY)
         return Response({'cost':order.cost,'rec_address':order.receivers_stack['address'],"rec_name":order.receivers_stack['name'],'rec_phone_number':order.receivers_stack['phone_number']},status=status.HTTP_201_CREATED)
     
     def get(self, request, format=None):
