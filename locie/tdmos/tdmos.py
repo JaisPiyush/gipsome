@@ -437,8 +437,6 @@ class TDMOSystem:
           - First thing is to check whether the len of final servei_cluster,
           -  if len is 0 than order status is failed and customer is notified
           - else get int and check delivery type. If SSU then servei in sender list and customer in receiver list  add pilot andstart ssu_sevice
-          -    else UDS then check if pilot cluster is 0 sender is customer and receivers are servei add pilot --> start inverse_ssu_service
-          -         else pilot_cluster  is 1 senders are servei and receivers are customers, pilot is assigned --> start ssu_service
         """
         self.order.biding_bared = True
         self.order.save()

@@ -116,7 +116,7 @@ class PilotManager:
                 })
                 param = lambda point: point['index']
                 pointers.sort(reverse=True, key=param)
-                self.order.route_planner = pointers
+                self.order.route_plan = [value['servei_id'] for value in pointers]
 
         elif cust_to_servei:
             # first is customer and last is the farthest servei from customer
