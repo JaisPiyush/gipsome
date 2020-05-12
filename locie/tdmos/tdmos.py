@@ -349,7 +349,7 @@ class TDMOSystem:
             else:
                 cluster = self.order.final_servei_cluster.values()
 
-            for servei in self.cluster:
+            for servei in cluster:
                 if servei['price'] <= 80:
                     servei['platform_charge'] = 0
                 elif servei['price'] > 80:
@@ -427,8 +427,11 @@ class TDMOSystem:
             if self.order.delivery_type == 'SSU':
                 for servei_id in self.order.final_servei_cluster.keys():
                     senders_list.append(servei_id)
+                    if self.order.final_servei_cluster[servei_id]['platform_charge'] == 0.0:
+                        self.order.final_servei_cluster[servei_id]['platform_charge'] = 25.0
                     net_price += self.order.final_servei_cluster[servei_id]['net_price']
                     price += self.order.final_servei_cluster[servei_id]['price']
+
                 receivers_list.append(self.order.customer_id)
                 self.order.receivers_list = receivers_list
                 self.order.senders_list = senders_list
