@@ -406,14 +406,13 @@ class TDMOSystem:
         """
           Notify every servei about orders and start reactore only if delivery required
         """
-        for servei_id in self.order.servei_cluster.keys():
-            send_notification_to_partner.delay(servei_id,
-                                               title='New Order',
-                                               body='New Order has arrived for you',
-                                               data={'type': 'new-order', 'order_id': self.order.order_id,
-                                                     'status': self.order.status,
-                                                     'delivery_type': self.order.delivery_type}
-                                               )
+        # for servei_id in self.order.servei_cluster.keys():
+            # send_notification_to_partner.delay(servei_id,
+            #                                    title='New Order',
+            #                                    body='New Order has arrived for you',
+            #                                    data={'type': 'new-order', 'order_id': self.order.order_id,
+            #                                          }
+            #                                    )
             # device = MobileDevice.objects.filter(locie_partner=servei_id)
             # if device:
             #     device = device.first()
