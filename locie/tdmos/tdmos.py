@@ -523,7 +523,7 @@ class TDMOSystem:
                                     'type': 'order_update', 'order_id': self.order.order_id, 'status': self.order.status}}, api_key=API_KEY)
 
             if self.order.pilot_cluster:
-                pilot_id = self.order.pilot_cluster.keys()[-1]
+                pilot_id = list(self.order.pilot_cluster.keys())[-1]
                 device = MobileDevice.objects.filter(locie_partner=pilot_id)
                 if device:
                     device = device.first()
@@ -544,7 +544,7 @@ class TDMOSystem:
                                     'type': 'order_update', 'order_id': self.order.order_id, 'status': self.order.status}}, api_key=API_KEY)
 
             if self.order.pilot_cluster:
-                pilot_id = self.order.pilot_cluster.keys()[-1]
+                pilot_id = list(self.order.pilot_cluster.keys())[-1]
                 device = MobileDevice.objects.get(locie_partner=pilot_id)
                 device.send_message('Order Cancelled', f'Order has been Cancelled!. Order ID:{self.order.order_id}, because {reason}',
                                     data={'click_action': 'FLUTTER_NOTIFICATION_CLICK', 'data': {

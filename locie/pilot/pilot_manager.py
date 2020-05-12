@@ -58,7 +58,7 @@ class PilotManager:
             device = MobileDevice.objects.filter(locie_partner=final_pilot.pilot_id)
             if device:
                 device = device.first()
-                device.send_message('New Order', f'New Order is assigned to you',
+                device.send_message(title='New Order', body='New Order is assigned to you',
                                 data={'click_action': 'FLUTTER_NOTIFICATION_CLICK', 'data': {
                                     'type': 'new-order', 'order_id': self.order_id}}, api_key=API_KEY)
             
@@ -97,7 +97,8 @@ class PilotManager:
         if not cust_to_servei:
             servei_list = self.order.final_servei_cluster.keys()
             customer_coords = self.order.customer_stack['coordinates']
-            pilot_coords = self.order.pilot_stack[-1]['coordinates']
+            pilot_cluster = list(self.order.pilot_cluster.keys())
+            pilot_coords = self.order.pilot_cluster[pilot_cluster[-1]]['coordinates']
             pilot_coord = Point(pilot_coords['lat'],pilot_coords['long'])
             customer_coord = Point(customer_coords['lat'],customer_coords['long'])
             pointers =[]
