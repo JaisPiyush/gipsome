@@ -6,6 +6,7 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.views import APIView
 from rest_framework import status
 import json
+from ..tasks import shared_task
 from django.db.models import Q
 
 
@@ -36,6 +37,24 @@ class RPMNSRegistartionUpdate(APIView):
 
 
 
+@shared_task
+def send_notification_to_partner(partner_id,title=None,body=None,data={}):
+    device = MobileDevice.objects.filter(locie_partner=partner_id)
+    if device:
+        device = device.first()
+        device.send_message(title=title,body=body,data={
+            'click_action':'FLUTTER_NOTIFICATION_CLICK',
+            'data':data,
 
+        },api_key=API_KEY)
 
+@shared_task
+def send_notification_to_customer(customer_id,title=None,body=None,data={}):
+    device = CustomerDevice.objects.filter(customer_id=customer_id)
+    if device:
+        device = device.first()
+        device.send_message(title=title,body=body,data={
+            'click_action':'FLUTTER_NOTIFICATION_CLICK',
+            'data':data
+        },api_key=API_KEY)
 
