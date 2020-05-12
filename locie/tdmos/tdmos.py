@@ -411,9 +411,7 @@ class TDMOSystem:
                                                title='New Order',
                                                body='New Order has arrived for you',
                                                data={'type': 'new-order', 'order_id': self.order.order_id,
-                                                     'cluster': self.order.servei_cluster[servei_id]['items'],
-                                                     'total_quantity': self.order.servei_cluster[servei_id]['quantity'],
-                                                     'net_price': self.order.servei_cluster['net_price'],
+                                                     'cluster': self.order.servei_cluster[servei_id],
                                                      'status': self.order.status,
                                                      'delivery_type': self.order.delivery_type}
                                                )
