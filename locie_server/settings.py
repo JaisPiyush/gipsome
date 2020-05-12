@@ -169,3 +169,5 @@ CELERY_RESULT_BACKEND = 'db+postgresql://postgres:piyush@103@localhost:5432/iman
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
+
+

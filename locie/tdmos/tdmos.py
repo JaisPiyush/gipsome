@@ -441,7 +441,8 @@ class TDMOSystem:
                 self.order.locie_transfer = price
                 self.order.locie_reversion = net_price
                 self.order.save()
-                pilot_manager = PilotManager(self.order.order_id).pilot_compass()
+                pilot_manager = PilotManager(self.order.order_id)
+                pilot_manager.pilot_compass()
                 pilot_manager.route_planner(cust_to_servei=False)
                 self.order.senders_list = [value['servei_id'] for value in self.order.route_plan]
                 self.order.save()
@@ -461,7 +462,8 @@ class TDMOSystem:
                     self.order.locie_transfer = 0.0
                     self.order.locie_reversion = 0.0
                     self.order.save()
-                    pilot_manager = PilotManager(self.order.order_id).pilot_compass()
+                    pilot_manager = PilotManager(self.order.order_id)
+                    pilot_manager.pilot_compass()
                     pilot_manager.route_planner(cust_to_servei=True)
                     self.order.receivers_list = [value['servei_id'] for value in self.order.route_plan]
                     self.order.save()
