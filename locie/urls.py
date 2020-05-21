@@ -1,12 +1,12 @@
 from django.urls import path, include
 from .views import *
 from .gadgets.rpmns import *
-from .tdmos.tdmos import *
+from .tdmos.tdmos import OrderServeiInterface
 urlpatterns = [
     #Check Connetcion
     path('checkConn/',CheckConnection.as_view()),
     #account creation
-    path('accountcreate/suit/', AccountAddmission.as_view()),
+    path('accountcreate/suit/', AccountAdmission.as_view()),
 
     # Servei Login
     path('accountlogin/servei',ServeiLogin.as_view()),
@@ -24,7 +24,7 @@ urlpatterns = [
     path('serveiAlterItem/',ItemAlterView.as_view()),
     # one account
     # path('account/',CustomerLogin.as_view()), #--check
-    path('cityCode/',CityCodeCreate.as_view()),
+    path('cityCode/',CityCodeService.as_view()),
     #Analytics
     path('analytics/',Analytics.as_view()),
     # Items Extractor
@@ -34,10 +34,8 @@ urlpatterns = [
     path('default-items/',DefaultItemsWindow.as_view()),
     # Item Creation
     path('item-creation/',ItemCreateView.as_view()),
-    #Rate
-    path('rate-list/',RateView.as_view()),
     #MeasureParam
-    path('measure-parameters/',MeasureParamView.as_view()),
+
     #StoreCreate
     path('new-store/',CreateStoreView.as_view()),
 
@@ -46,8 +44,6 @@ urlpatterns = [
     # OrderServeiInterface
     path('order-interface-servei/',OrderServeiInterface.as_view()),
 
-    #Customer Order Interface --check
-    path('customer-order-interface/',CustomerOrderInterface.as_view()), # --check
     # Availablity
     path('available/',ServeiAvailablity.as_view()),
 
@@ -69,6 +65,11 @@ urlpatterns = [
 
    # Verify Token
    path('verifyToken/',VerifyToken.as_view()),
+
+   #Get Orders
+   path('ordersView/',OrderView.as_view()),
+
+   path('category-selection/',CategorySelection.as_view()),
 
   
 
