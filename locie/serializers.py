@@ -1,8 +1,7 @@
 from rest_framework import serializers
-from rest_framework.authtoken.models import Token
-from .models import Account, AccountManager
+
 from .models import *
-from .gadgets.serverOps import servei_id_creatore, pilot_id_creatore
+from .tdmos.tdmos import SERVED
 
 
 class AccountCreationSerializer(serializers.ModelSerializer):
@@ -111,7 +110,7 @@ class CategorySelectionSerializer:
     def __init__(self,query_set):
         self.query_set = query_set
         self.returnable = []
-        print(self.query_set)
+
         for category in self.query_set:
             if isinstance(category,CategoryModel):
                 self.returnable.append(self.category_serialize(category))
@@ -121,20 +120,15 @@ class CategorySelectionSerializer:
 
     def category_serialize(self,category):
         data = {}
-        print(type(category))
-        if isinstance(category,str):
-            print(category)
         data["name"] = category.name
         data["cat_type"] = category.cat_type
         data["cat_id"] = category.cat_id
         data["prev_cat"] = category.prev_cat
         if data["cat_type"] == "FC":
-            data["next_cat"] = [self.category_serialize(nextcateg) for nextcateg in category.next_cat] if category.next_cat else []            
-        data["image"] = category.image
-        data["required_desc"] = category.required_desc
-        data["delivery_type"] = category.delivery_type
+            data["next_cat"] = [self.category_serialize(nextcateg) for nextcateg in category.next_cat] if category.next_cat else []
+
+        data["required_desc"] = category.required_desc if category.required_desc else []
         data["radiod"] = 1 if category.radiod else 0
-        data["returnable"] = 1 if category.returnable else 0
         data["default_items"] = [self.default_item_serialize(defaultitem) for defaultitem in category.default_items] if category.default_items else []
         return data
 
@@ -145,11 +139,8 @@ class CategorySelectionSerializer:
             "name":defaultitem.name,
             "cat_id":defaultitem.cat_id,
             "unit":defaultitem.unit,
-            "measure_param":defaultitem.measure_param,
+            "measure":defaultitem.measure_param,
             "image":defaultitem.image,
-            "pick_type":defaultitem.pick_type,
-            "delivery_type":defaultitem.delivery_type,
-            "inspection":1 if defaultitem.inspection else 0,
             "description":defaultitem.description
         }
 
@@ -173,3 +164,41 @@ class CustomerReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomerReviewModel
         fields = '__all__'
+
+class OrderServeiSerializer:
+
+    def __init__(self,orders,servei_id,final=False):
+        self.orders = orders
+        self.final = final
+        self.servei_id = servei_id
+
+    def serialize(self,order):
+        returnable_dict ={}
+        returnable_dict['order_id'] = f"{order.order_id}"
+        if order.otp:
+            returnable_dict['otp'] = f"{order.otp}"
+        cluster = None
+        if self.final:
+            cluster = order.final_servei_cluster[self.servei_id]
+        else:
+            cluster = order.servei_cluster[self.servei_id]
+        returnable_dict['items'] = cluster['items']
+        returnable_dict['quantity'] = cluster['quantity']
+        returnable_dict['net_price'] = cluster['net_price']
+        returnable_dict['price'] = cluster['price']
+        returnable_dict['platform_charge'] = cluster['platform_charge']
+        returnable_dict['extra_charges'] = cluster['extra_charges']
+        returnable_dict['status'] = cluster['status']
+        returnable_dict['delivery_required'] = 1 if order.delivery_required else 0
+        returnable_dict['payment_COD'] = 1 if order.payment_COD else 0
+        returnable_dict['payment_complete'] = 1 if order.payment_complete else 0
+        return returnable_dict
+
+    def data(self):
+        data =[]
+        for order in self.orders:
+            if self.servei_id in order.final_servei_cluster.keys() and order.final_servei_cluster[self.servei_id]['status'] != SERVED:
+                data.append(self.serialize(order))
+        return data
+
+

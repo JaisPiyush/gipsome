@@ -50,13 +50,9 @@ class Account(AbstractBaseUser, PermissionsMixin):
     date_joined = models.DateField(default = timezone.now())
     phone_number = models.CharField(max_length=15, default='', db_index=True)
     is_staff = models.BooleanField(default=False)
-    # phone_token = models.TextField(default='', db_index=True)
     is_superuser = models.BooleanField(default=False)
-    # servei,de,customer
     # 002 : Servei, 003: Pilot, 009: customer, 001: Locie
     relation = models.CharField(max_length=4, default='', db_index=True)
-    # FCM Token of device
-    # device_token = models.TextField(default='')
 
     objects = AccountManager()
 
@@ -218,7 +214,7 @@ class Item(models.Model):
     # Category Reference
     prev_cat = models.CharField(max_length=30, default=True)
     father_cat = models.CharField(max_length=30, default=True)
-    required_desc = ArrayField(models.CharField(max_length=80),default=list,blank=True)
+    required_desc = JSONField(default=dict)
 
     ratings = models.DecimalField(max_digits=3, decimal_places=2, default=0.00)
 
@@ -242,17 +238,17 @@ class Servei(models.Model):
     phone_number = models.CharField(max_length=10, default='', unique=True)
     email = models.EmailField(default='')
     gender = models.CharField(max_length=20, default='')
-    profession = models.CharField(max_length=30, default='')
+    # profession = models.CharField(max_length=30, default='')
     image = models.TextField(default='')
     coordinates = gis_models.PointField(srid=4326, default=Point(0.00, 0.00, srid=4326))
 
     # Official Data
     aadhar = models.CharField(
         max_length=30, default='', unique=True, db_index=True)
-    aadhar_image = models.TextField(default='')
-    pan = models.CharField(max_length=30, default='',
-                           unique=True, db_index=True)
-    pan_image = models.TextField(default='')
+    #aadhar_image = models.TextField(default='')
+    #pan = models.CharField(max_length=30, default='',
+                           # unique=True, db_index=True)
+    #pan_image = models.TextField(default='')
 
     store = models.CharField(max_length=50, default='', db_index=True)
     # Date of joining and DOB
@@ -267,8 +263,8 @@ class Servei(models.Model):
     # address --> {'address_line_1',address_line_2,city,state,country,pin_code}
     address = JSONField(default=dict)
     pin_code = models.CharField(max_length=6, default='')
-    country = models.CharField(max_length=20, default='INDIA')
-    country_code = models.CharField(max_length=4, default='+91')
+    #country = models.CharField(max_length=20, default='INDIA')
+    #country_code = models.CharField(max_length=4, default='+91')
 
 
 
@@ -280,20 +276,20 @@ class Store(models.Model):
     creator = models.CharField(max_length=30, default=True, db_index=True)
     coordinates = gis_models.PointField(srid=4326, default=Point(0.00, 0.00, srid=4326))
     store_category = ArrayField(models.CharField(max_length=30), default=list)
-    father_categories = ArrayField(
-        models.CharField(max_length=30), default=list)
+    #father_categories = ArrayField(
+        # models.CharField(max_length=30), default=list)
 
     # store Key
     store_key = models.CharField(
         max_length=50, db_index=True, default='', primary_key=True)
-    owners = ArrayField(models.CharField(max_length=30), default=list)
+    #owners = ArrayField(models.CharField(max_length=50), default=list)
 
     # Array of itemIds
-    product_line = ArrayField(models.CharField(
-        max_length=20, db_index=True), default=list)
+    #product_line = ArrayField(models.CharField(
+        # max_length=20, db_index=True), default=list)
 
     # When non-gst store is created
-    creators_profession = models.CharField(max_length=30, default='')
+    #creators_profession = models.CharField(max_length=30, default='')
 
 
     # aadhar and pan  of creator or pan_token of creator

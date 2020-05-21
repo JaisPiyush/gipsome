@@ -322,6 +322,16 @@ class OrderServeiInterface(APIView):
                 {'order_id': order.order_id, 'servei_status': COMPLETED, 'otp': order.otp, 'status': order.status},
                 status=status.HTTP_200_OK)
 
+        elif int(data['action']) == SERVED:
+            order = Order.objects.get(order_id=data['order_id'])
+            if not order.delivery_required:
+                order.final_servei_cluster[data['servei_id']]['status'] == SERVED
+                TDMOSystem(order).status_setter(FINISHED)
+                order.save()
+                return Response({},status=status.HTTP_200_OK)
+            else:
+                return Response({},status=status.HTTP_403_FORBIDDEN)
+
 
 class TDMOSystem:
 
@@ -408,6 +418,7 @@ class TDMOSystem:
         """
         if self.order.delivery_required:
             wait.delay(self.order.order_id, time=180)
+        # TODO: In Store Notification Fireing and Servei Notification Firing
 
     def reactor(self):
         """
