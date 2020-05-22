@@ -69,10 +69,10 @@ class Migration(migrations.Migration):
             field=models.DateTimeField(default=datetime.datetime(2020, 5, 21, 23, 44, 40, 224852, tzinfo=utc)),
         ),
         migrations.RemoveField(
-        model_name='item',
-        name='required_desc',
+            model_name='item',
+            name='required_desc',
         ),
-        migrations.AlterField(
+        migrations.AddField(
             model_name='item',
             name='required_desc',
             field=django.contrib.postgres.fields.jsonb.JSONField(default=dict),
