@@ -52,7 +52,7 @@ def servei_creation(account, data):
         first_name=data['first_name'], last_name=data['last_name'], phone_number=data['phone_number'],
         email=data['email'], gender=data['gender'], image=data['image'],
         coordinates=Point(data['coordinates']['lat'], data['coordinates']['long']),
-        aadhar=data['aadhar'], date_join=ist_datetime(timezone.now().date()), allowed=True,
+        aadhar=data['aadhar'],allowed=True,
         online=True, address=data['address'], pin_code=data['pin_code']
     )
     return servei
