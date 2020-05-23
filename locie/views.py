@@ -497,6 +497,7 @@ class CategorySelection(APIView):
     def get(self, request, format=None):
         data = request.GET
         father_categories = list(Category.objects.filter(Q(city_site__contains=[data['cityCode']]) & Q(cat_type='FC')))
+        print(father_categories)
         for father_category in father_categories:
             father_category.default_items = list(DefaultItems.objects.filter(cat_id=father_category.cat_id))
             categories = list(Category.objects.filter(Q(father_cat=father_category.cat_id) & Q(radiod=True)))
@@ -504,7 +505,7 @@ class CategorySelection(APIView):
                 category.default_items = list(DefaultItems.objects.filter(cat_id=category.cat_id))
             father_category.next_cat = categories
 
-        serial = HeadCategorySerializer(father_categories).data
+        serial = CategorySelectionSerializer(father_categories).data()
         return Response({"categories": serial}, status=status.HTTP_200_OK)
 
 

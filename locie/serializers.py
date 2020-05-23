@@ -111,23 +111,21 @@ class CategorySelectionSerializer:
         self.query_set = query_set
         self.returnable = []
 
-        for category in self.query_set:
-            if isinstance(category,CategoryModel):
-                self.returnable.append(self.category_serialize(category))
+
     
     def data(self):
+        for category in self.query_set:
+            if isinstance(category,Category):
+                self.returnable.append(self.category_serialize(category))
         return self.returnable
 
-    def category_serialize(self,category):
+    def category_serialize(self,category:Category):
         data = {}
         data["name"] = category.name
         data["cat_type"] = category.cat_type
         data["cat_id"] = category.cat_id
-        data["prev_cat"] = category.prev_cat
         if data["cat_type"] == "FC":
             data["next_cat"] = [self.category_serialize(nextcateg) for nextcateg in category.next_cat] if category.next_cat else []
-
-        data["required_desc"] = category.required_desc if category.required_desc else []
         data["radiod"] = 1 if category.radiod else 0
         data["default_items"] = [self.default_item_serialize(defaultitem) for defaultitem in category.default_items] if category.default_items else []
         return data
