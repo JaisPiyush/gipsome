@@ -8,7 +8,7 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from rest_framework.views import Response
-from .tdmos.tdmos import FINISHED, FAILED
+from .tdmos.tdmos import FINISHED, FAILED,WORKING,COMPLETED,PENDING
 from .gadgets.serverOps import storeKeyGenerator, item_id_generator, ist_datetime
 from .models import *
 from .serializers import *
@@ -25,8 +25,8 @@ def store_creation(servei: Servei, data):
         coordinates=Point(data['coordinates']['lat'], data['coordinates']['long']),
         contact={"emails": [data['email']], "phone_numbers": [data['phone_number']]},
         address=data['address'], cityCode=data['cityCode'],
-        opening_time=datetime.datetime.strptime(data['opening_time'], '%d-%m-%Y'),
-        closing_time=datetime.datetime.strptime(data['closing_time'], '%d-%m-%Y'), online=True, allowed=True,
+        opening_time=datetime.datetime.strptime(data['opening_time'], '%H:%M:%S'),
+        closing_time=datetime.datetime.strptime(data['closing_time'], '%H:%M:%S'), online=True, allowed=True,
     )
     image = None
     description = None
@@ -840,7 +840,16 @@ class OrderView(APIView):
             '-date_time_creation')
         non_pending_orders = orders.filter(Q(final_servei_cluster__has_key=data['servei_id'])).order_by(
             '-date_time_creation')
+        working_orders =[]
+        completed_orders =[]
+        for order in non_pending_orders:
+            if order.final_servei_cluster[data['servei_id']]['status'] == WORKING:
+                working_orders.append(order)
+            elif order.final_servei_cluster[data['servei_id']]['status'] == COMPLETED:
+                completed_orders.append(order)
+
         return Response({
             "pending_orders": OrderServeiSerializer(pending_orders, data['servei_id'], final=False),
-            "non_pending_orders": OrderServeiSerializer(non_pending_orders, data['servei_id'], final=True)
+            "working_order": OrderServeiSerializer(working_orders, data['servei_id'], final=True),
+            "completed_orders":OrderServeiSerializer(completed_orders, data['servei_id'], final=True),
         }, status=status.HTTP_200_OK)
