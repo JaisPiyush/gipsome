@@ -504,7 +504,7 @@ class CategorySelection(APIView):
                 category.default_items = list(DefaultItems.objects.filter(cat_id=category.cat_id))
             father_category.next_cat = categories
 
-        serial = HeadCategorySerializer(father_categories).data()
+        serial = HeadCategorySerializer(father_categories).data
         return Response({"categories": serial}, status=status.HTTP_200_OK)
 
 
