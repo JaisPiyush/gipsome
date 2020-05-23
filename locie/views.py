@@ -8,7 +8,7 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from rest_framework.views import Response
-from .tdmos.tdmos import FINISHED, FAILED,WORKING,COMPLETED,PENDING
+from .tdmos.tdmos import FINISHED, FAILED, WORKING, COMPLETED, PENDING
 from .gadgets.serverOps import storeKeyGenerator, item_id_generator, ist_datetime
 from .models import *
 from .serializers import *
@@ -21,7 +21,7 @@ from .tdmos.tdmos import SERVED, FAILED
 
 def store_creation(servei: Servei, data):
     store = Store.objects.create(
-        store_key = storeKeyGenerator(servei.servei_id),
+        store_key=storeKeyGenerator(servei.servei_id),
         store_name=data['store_name'], creator=servei.servei_id,
         coordinates=Point(data['coordinates']['lat'], data['coordinates']['long']),
         contacts={"emails": [data['email']], "phone_numbers": [data['phone_number']]},
@@ -43,19 +43,19 @@ def store_creation(servei: Servei, data):
             if description and image:
                 break
 
-
-
     store.save()
+    servei.store = store.store_key
+    servei.save()
     return store
 
 
-def servei_creation(account:Account, data):
+def servei_creation(account: Account, data):
     servei = Servei.objects.create(
         servei_id=account.account_id, account=account, cityCode=data['cityCode'],
         first_name=data['first_name'], last_name=data['last_name'], phone_number=data['phone_number'],
         email=data['email'], gender=data['gender'], image=data['image'],
         coordinates=Point(data['coordinates']['lat'], data['coordinates']['long']),
-        aadhar=data['aadhar'],allowed=True,
+        aadhar=data['aadhar'], allowed=True,
         online=True, address=data['address'], pin_code=data['pin_code']
     )
     return servei
@@ -159,12 +159,14 @@ class ServeiLogin(APIView):
                     token = Token.objects.get(user=account)
                     if not servei.store:
                         return Response({'servei_id': servei.servei_id, 'token': token.key, 'aadhar': servei.aadhar,
-                                         'phone_number': servei.phone_number, 'cityCode': servei.cityCode,'online':1 if servei.online else 0},
+                                         'phone_number': servei.phone_number, 'cityCode': servei.cityCode,
+                                         'online': 1 if servei.online else 0},
                                         status=status.HTTP_202_ACCEPTED)
                     else:
                         return Response({'servei_id': servei.servei_id, 'token': token.key, 'aadhar': servei.aadhar,
                                          'phone_number': servei.phone_number, 'cityCode': servei.cityCode,
-                                         'store_key': servei.store,'online':1 if servei.online else 0}, status=status.HTTP_202_ACCEPTED)
+                                         'store_key': servei.store, 'online': 1 if servei.online else 0},
+                                        status=status.HTTP_202_ACCEPTED)
                 else:
                     return Response({}, status=status.HTTP_401_UNAUTHORIZED)
             else:
@@ -221,7 +223,7 @@ class ServeiLogOut(APIView):
             store.save()
             return Response({}, status=status.HTTP_202_ACCEPTED)
         else:
-            return Response({},status=status.HTTP_400_BAD_REQUEST)
+            return Response({}, status=status.HTTP_400_BAD_REQUEST)
 
 
 # Create Store View
@@ -492,7 +494,7 @@ class ItemCreateView(APIView):
 class CategorySelection(APIView):
     permission_classes = [AllowAny]
 
-    def get(self,request,format=None):
+    def get(self, request, format=None):
         data = request.GET
         father_categories = list(Category.objects.filter(Q(city_site__contains=[data['cityCode']]) & Q(cat_type='FC')))
         for father_category in father_categories:
@@ -503,7 +505,8 @@ class CategorySelection(APIView):
             father_category.next_cat = categories
 
         serial = HeadCategorySerializer(father_categories).data()
-        return Response({"categories":serial},status=status.HTTP_200_OK)
+        return Response({"categories": serial}, status=status.HTTP_200_OK)
+
 
 class ServeiAvailablity(APIView):
     authentication_classes = [TokenAuthentication]
@@ -696,7 +699,7 @@ class VerifyToken(APIView):
             token = token.first()
             if 'phone_token' in data.keys():
                 device = MobileDevice.objects.get_or_create(locie_partner=token.user.account_id,
-                                                             partnership=token.user.relation)
+                                                            partnership=token.user.relation)
                 device.registration_id = data['phone_token']
                 device.save()
 
@@ -789,21 +792,25 @@ class OrderHistory(APIView):
 
     def get(self, request, format=None):
         data = request.GET
-        orders = Order.objects.filter(servei_list__contains=[data['servei_id']] & Q(Q(status=FINISHED) | Q(status = FAILED))).order_by('-date_time_creation')
+        orders = Order.objects.filter(
+            servei_list__contains=[data['servei_id']] & Q(Q(status=FINISHED) | Q(status=FAILED))).order_by(
+            '-date_time_creation')
         if orders:
             returning_order = []
             for order in orders:
-                cluster = order.final_servei_cluster[data['servei_id']] if data['servei_id'] in order.final_servei_cluster.keys() else order.servei_cluster[data['servei_id']]
+                cluster = order.final_servei_cluster[data['servei_id']] if data[
+                                                                               'servei_id'] in order.final_servei_cluster.keys() else \
+                order.servei_cluster[data['servei_id']]
                 returning_order.append({
                     "order_id": order.order_id,
                     "payment_COD": order.payment_COD,
                     "payment_complete": order.payment_complete,
-                    "price":cluster['price'],
-                    "net_price":cluster['net_price'],
-                    "quantity":cluster['quantity'],
-                    "platform_charge":cluster['platform_charge'],
-                    "items":cluster['items'],
-                    "status":cluster['status'],
+                    "price": cluster['price'],
+                    "net_price": cluster['net_price'],
+                    "quantity": cluster['quantity'],
+                    "platform_charge": cluster['platform_charge'],
+                    "items": cluster['items'],
+                    "status": cluster['status'],
                     "delivery_required": 1 if order.delivery_required else 0,
                 }),
             return Response({"orders": returning_order}, status=status.HTTP_200_OK)
@@ -847,12 +854,12 @@ class OrderView(APIView):
             '-date_time_creation')
         non_pending_orders = orders.filter(Q(final_servei_cluster__has_key=data['servei_id'])).order_by(
             '-date_time_creation')
-        store = Store.objects.filter(creator = data['servei_id'])
+        store = Store.objects.filter(creator=data['servei_id'])
         online = 0
         if store:
             online = 1 if store.online else 0
-        working_orders =[]
-        completed_orders =[]
+        working_orders = []
+        completed_orders = []
         for order in non_pending_orders:
             if order.final_servei_cluster[data['servei_id']]['status'] == WORKING:
                 working_orders.append(order)
@@ -862,6 +869,6 @@ class OrderView(APIView):
         return Response({
             "pending_orders": OrderServeiSerializer(pending_orders, data['servei_id'], final=False).data(),
             "working_order": OrderServeiSerializer(working_orders, data['servei_id'], final=True).data(),
-            "completed_orders":OrderServeiSerializer(completed_orders, data['servei_id'], final=True).data(),
-            "online":online
+            "completed_orders": OrderServeiSerializer(completed_orders, data['servei_id'], final=True).data(),
+            "online": online
         }, status=status.HTTP_200_OK)
