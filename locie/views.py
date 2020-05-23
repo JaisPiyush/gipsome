@@ -21,9 +21,10 @@ from .tdmos.tdmos import SERVED, FAILED
 
 def store_creation(servei: Servei, data):
     store = Store.objects.create(
+        store_key = storeKeyGenerator(servei.servei_id),
         store_name=data['store_name'], creator=servei.servei_id,
         coordinates=Point(data['coordinates']['lat'], data['coordinates']['long']),
-        contact={"emails": [data['email']], "phone_numbers": [data['phone_number']]},
+        contacts={"emails": [data['email']], "phone_numbers": [data['phone_number']]},
         address=data['address'], cityCode=data['cityCode'],
         opening_time=datetime.datetime.strptime(data['opening_time'], '%H:%M:%S'),
         closing_time=datetime.datetime.strptime(data['closing_time'], '%H:%M:%S'), online=True, allowed=True,
@@ -32,21 +33,23 @@ def store_creation(servei: Servei, data):
     description = None
     for key in data.keys():
         if key == "store_image":
-            image = data['image']
+            image = data['store_image']
+            store.image = image
             if description and image:
                 break
         elif key == "description":
             description = data['description']
+            store.descriptions = description
             if description and image:
                 break
 
-    store.image = image
-    store.descriptions = description
+
+
     store.save()
     return store
 
 
-def servei_creation(account, data):
+def servei_creation(account:Account, data):
     servei = Servei.objects.create(
         servei_id=account.account_id, account=account, cityCode=data['cityCode'],
         first_name=data['first_name'], last_name=data['last_name'], phone_number=data['phone_number'],
@@ -73,6 +76,7 @@ class AccountAdmission(APIView):
         servei = Servei.objects.filter(aadhar=data['aadhar'])
         if servei:
             # Servei Exist Now Checking Store
+            print('Trace When Servei Exist but not Store')
             servei = servei.first()
             account = Account.objects.get(account_id=servei.servei_id)
             store = Store.objects.filter(creator=servei.servei_id)
@@ -98,6 +102,7 @@ class AccountAdmission(APIView):
                 account = account.first()
                 token = Token.objects.get(user=account)
                 if account.check_password(data['password']):
+                    print('Trace when account exist but n Servei n Store')
                     servei = servei_creation(account, data)
                     store = store_creation(servei, data)
                     return Response({
@@ -116,6 +121,7 @@ class AccountAdmission(APIView):
                     servei_id_creatore(data['cityCode'], data['aadhar'], data['phone_number']), data['password'], '002',
                     data['phone_number'])
                 token = Token.objects.get(user=account)
+                print('Trace When none exist')
                 servei = servei_creation(account, data)
                 store = store_creation(servei, data)
                 return Response({
