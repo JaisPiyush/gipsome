@@ -857,6 +857,7 @@ class OrderView(APIView):
         store = Store.objects.filter(creator=data['servei_id'])
         online = 0
         if store:
+            store = store.first()
             online = 1 if store.online else 0
         working_orders = []
         completed_orders = []
