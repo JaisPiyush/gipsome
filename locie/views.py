@@ -847,6 +847,10 @@ class OrderView(APIView):
             '-date_time_creation')
         non_pending_orders = orders.filter(Q(final_servei_cluster__has_key=data['servei_id'])).order_by(
             '-date_time_creation')
+        store = Store.objects.filter(creator = data['servei_id'])
+        online = 0
+        if store:
+            online = 1 if store.online else 0
         working_orders =[]
         completed_orders =[]
         for order in non_pending_orders:
@@ -856,7 +860,8 @@ class OrderView(APIView):
                 completed_orders.append(order)
 
         return Response({
-            "pending_orders": OrderServeiSerializer(pending_orders, data['servei_id'], final=False),
-            "working_order": OrderServeiSerializer(working_orders, data['servei_id'], final=True),
-            "completed_orders":OrderServeiSerializer(completed_orders, data['servei_id'], final=True),
+            "pending_orders": OrderServeiSerializer(pending_orders, data['servei_id'], final=False).data(),
+            "working_order": OrderServeiSerializer(working_orders, data['servei_id'], final=True).data(),
+            "completed_orders":OrderServeiSerializer(completed_orders, data['servei_id'], final=True).data(),
+            "online":online
         }, status=status.HTTP_200_OK)
