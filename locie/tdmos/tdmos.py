@@ -230,7 +230,7 @@ class CustomerOrderInterface(APIView):
             else:
                 order.payment_COD = True,
                 order.payment_complete = False
-            tdmos = TDMOSystem(order).status_setter(CREATED)
+            TDMOSystem(order).status_setter(CREATED)
             trigger.delay(order.order_id)
             return Response(
                 {"order_id": order.order_id, "otp": order.otp, "price": order.price, "net_price": order.net_price,
@@ -261,8 +261,6 @@ class OrderServeiInterface(APIView):
                 return Response({}, status=status.HTTP_403_FORBIDDEN)
             order.servei_cluster[data['servei_id']
             ]['status'] = ACCEPTED
-            servei_price = 0.0
-            total_quantity = 0.0
             order.servei_cluster[data['servei_id']]['status'] = WORKING
             order.final_servei_cluster[data['servei_id']
             ] = {
@@ -275,10 +273,6 @@ class OrderServeiInterface(APIView):
                 "servei_id": data['servei_id'],
                 "price": 0.0
             }
-            final_items = {}
-            tdmos = TDMOSystem(order)
-            quantity = 0.0
-            price = 0.0
             servei = order.servei_cluster[data['servei_id']]
             for item_id in data['items']:
                 order.final_servei_cluster[data['servei_id']
@@ -293,14 +287,10 @@ class OrderServeiInterface(APIView):
                                                                              'platform_charge']
             if order.otp == '':
                 order.otp = str(OtpPulse().random_with_n_digits(6))
+            elif not order.delivery_required:
+                order.final_servei_cluster['servei_id']['status'] = COMPLETED
             order.save()
-            return Response({'order_id': order.order_id, 'status': order.status, 'servei_status': ACCEPTED,
-                             'cluster': order.final_servei_cluster[data['servei_id']]['items'],
-                             'quantity': order.final_servei_cluster[data['servei_id']]['quantity'],
-                             'price': order.final_servei_cluster[data['servei_id']]['price'], 'otp': order.otp,
-                             "platform_charge": order.final_servei_cluster[data['servei_id']]['platform_charge'],
-                             "net_price": order.final_servei_cluster[data['servei_id']]['net_price']
-                             }, status=status.HTTP_200_OK)
+            return Response({}, status=status.HTTP_200_OK)
 
         elif int(data['action']) == COMPLETED:
             order = Order.objects.get(order_id=data['order_id'])

@@ -64,7 +64,7 @@ def dtime_diff(time1:datetime,time2:datetime):
     return delta
 
 
-def ist_datetime(self,time:datetime):
+def ist_datetime(time:datetime):
     asia = pytz.timezone("Asia/Kolkata")
     return time.astimezone(asia)
 
