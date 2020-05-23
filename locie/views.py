@@ -143,16 +143,17 @@ class ServeiLogin(APIView):
             # request.POST = json.loads(request.body)
             servei = None
             account = None
-            if 'aadhar' in request.POST.keys():
-                servei = Servei.objects.filter(aadhar=request.POST['aadhar']).first()
+            data = json.loads(request.body)
+            if 'aadhar' in data.keys():
+                servei = Servei.objects.filter(aadhar=data['aadhar']).first()
             elif 'servei_id' in request.POST.keys():
-                servei = Servei.objects.filter(servei_id=request.POST['servei_id']).first()
+                servei = Servei.objects.filter(servei_id=data['servei_id']).first()
             if servei:
                 account = Account.objects.get(account_id=servei.servei_id)
             else:
                 account = None
             if account:
-                if account.check_password(request.POST['password']):
+                if account.check_password(data['password']):
                     servei.online = True
                     servei.save()
                     token = Token.objects.get(user=account)
