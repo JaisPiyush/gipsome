@@ -62,14 +62,6 @@ class PilotManager:
                 data={
                     'type': 'new-order', 'order_id': self.order_id}
             )
-            # device = MobileDevice.objects.filter(locie_partner=final_pilot.pilot_id)
-            # if device:
-            #     device = device.first()
-            #     device.send_message(title='New Order', body='New Order is assigned to you',
-            #                     data={'click_action': 'FLUTTER_NOTIFICATION_CLICK', 'data': {
-            #                         'type': 'new-order', 'order_id': self.order_id}}, api_key=API_KEY)
-            #
-
         else:
             raise Exception()
 

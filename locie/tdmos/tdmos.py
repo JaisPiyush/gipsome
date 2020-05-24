@@ -406,6 +406,8 @@ class TDMOSystem:
         """
           Notify every servei about orders and start reactore only if delivery required
         """
+        for serveiId in self.order.servei_cluster.keys():
+            send_notification_to_customer.delay(serveiId,title='New Order',body='New Order has arrived for you! You habe 180 seconds in your hand.')
         if self.order.delivery_required:
             wait.delay(self.order.order_id, time=180)
         # TODO: In Store Notification Fireing and Servei Notification Firing
@@ -498,11 +500,7 @@ class TDMOSystem:
                     # ssu_start.delay(self.order.order_id)
         else:
             self.status_setter(FAILED)
-            # device = CustomerDevice.objects.get(customer_id=self.order.customer_id)
-            # device.send_message('Order Cancelled', 'Your Order has been cancelled by Stores',
-            #                      data={'click_action': 'FLUTTER_NOTIFICATION_CLICK',
-            #                      'data': {'type': 'order-cancel', 'order_id': self.order.order_id,
-            #                      'status': self.order.status}}, api_key=API_KEY)
+            send_notification_to_customer(self.order.customer_id,title='Order Cancelled',body="Sorry, but your order couldn't be served by stores")
 
     def kill(self, force=False, reason=None):
         """
@@ -525,13 +523,7 @@ class TDMOSystem:
                         'type': 'order_cancel', 'order_id': self.order.order_id,
                         'status': self.order.status}
                    )
-                # device = MobileDevice.objects.filter(locie_partner=servei)
-                # if device:
-                #     device = device.first()
-                #     device.send_message('Order Cancelled', f'Order has been Cancelled!. Order ID:{self.order.order_id}',
-                #                         data={'click_action': 'FLUTTER_NOTIFICATION_CLICK', 'data': {
-                #                             'type': 'order_cancel', 'order_id': self.order.order_id,
-                #                             'status': self.order.status}}, api_key=API_KEY)
+
             send_notification_to_customer.delay(
                 self.order.customer_id,
                 title='Order Cancelled',
@@ -540,15 +532,6 @@ class TDMOSystem:
                         'type': 'order_update', 'order_id': self.order.order_id,
                         'status': self.order.status}
             )
-            # device = CustomerDevice.objects.filter(
-            #     customer_id=self.order.customer_id)
-            # if device:
-            #     device = device.first()
-            #     device.send_message('Order Cancelled',
-            #                         f'Your Order with Order Id - {self.order.order_id} has been Cancelled',
-            #                         data={'click_action': 'FLUTTER_NOTIFICATION_CLICK', 'data': {
-            #                             'type': 'order_update', 'order_id': self.order.order_id,
-            #                             'status': self.order.status}}, api_key=API_KEY)
 
             if self.order.pilot_cluster:
                 pilot_id = list(self.order.pilot_cluster.keys())[-1]
@@ -558,38 +541,34 @@ class TDMOSystem:
                           'status': self.order.status}
 
                 )
-                # device = MobileDevice.objects.filter(locie_partner=pilot_id)
-                # if device:
-                #     device = device.first()
-                #     device.send_message('Order Cancelled', f'Order has been Cancelled!. Order ID:{self.order.order_id}',
-                #                         data={'click_action': 'FLUTTER_NOTIFICATION_CLICK', 'data': {
-                #                             'type': 'order_cancel', 'order_id': self.order.order_id,
-                #                             'status': self.order.status}}, api_key=API_KEY)
         elif force and reason:
             self.status_setter(FAILED)
-            # for servei in self.order.final_servei_cluster.keys():
-            #     device = MobileDevice.objects.get(locie_partner=servei)
-            #     device.send_message('Order Cancelled',
-            #                         f'Order has been Cancelled!. Order ID:{self.order.order_id} because {reason}',
-            #                         data={'click_action': 'FLUTTER_NOTIFICATION_CLICK', 'data': {
-            #                             'type': 'order_cancel', 'order_id': self.order.order_id,
-            #                             'status': self.order.status}}, api_key=API_KEY)
-            # device = CustomerDevice.objects.get(
-            #     customer_id=self.order.customer_id)
-            # device.send_message('Order Cancelled',
-            #                     f'Your Order with Order Id - {self.order.order_id} has been Cancelled, because {reason}',
-            #                     data={'click_action': 'FLUTTER_NOTIFICATION_CLICK', 'data': {
-            #                         'type': 'order_update', 'order_id': self.order.order_id,
-            #                         'status': self.order.status}}, api_key=API_KEY)
-            #
-            # if self.order.pilot_cluster:
-            #     pilot_id = list(self.order.pilot_cluster.keys())[-1]
-            #     device = MobileDevice.objects.get(locie_partner=pilot_id)
-            #     device.send_message('Order Cancelled',
-            #                         f'Order has been Cancelled!. Order ID:{self.order.order_id}, because {reason}',
-            #                         data={'click_action': 'FLUTTER_NOTIFICATION_CLICK', 'data': {
-            #                             'type': 'order_cancel', 'order_id': self.order.order_id,
-            #                             'status': self.order.status}}, api_key=API_KEY)
+            for servei in self.order.final_servei_cluster.keys():
+                send_notification_to_partner.delay(
+                    servei,
+                    title='Order Cancelled',
+                    body=f'Order has been Cancelled!. Order ID:{self.order.order_id}',
+                    data={
+                        'type': 'order_cancel', 'order_id': self.order.order_id,
+                        'status': self.order.status}
+                )
+            send_notification_to_customer.delay(
+                self.order.customer_id,
+                title='Order Cancelled',
+                body=f'Your Order with Order Id - {self.order.order_id} has been Cancelled',
+                data={
+                    'type': 'order_update', 'order_id': self.order.order_id,
+                    'status': self.order.status}
+            )
+
+            if self.order.pilot_cluster:
+                pilot_id = list(self.order.pilot_cluster.keys())[-1]
+                send_notification_to_partner.delay(
+                    pilot_id,title='Order Cancelled',body=f'Order has been Cancelled!. Order ID:{self.order.order_id}',
+                    data={'type': 'order_cancel', 'order_id': self.order.order_id,
+                          'status': self.order.status}
+
+                )
 
     def pad_service(self):
         if self.order.delivery_type == 'PAD':
