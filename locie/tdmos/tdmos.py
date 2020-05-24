@@ -168,8 +168,11 @@ class CustomerOrderInterface(APIView):
                         order.servei_cluster[value['servei_id']
                         ]['items']['price'] += value['price']
                         order.servei_cluster[value['servei_id']]['price'] += value['price']
-                        total_price += value - ['price']
+                        total_price += value['price']
                     else:
+                        print(value['servei_id'])
+                        print(value['item_id'])
+                        print(value['price'])
                         order.servei_list.append(value['servei_id'])
                         order.servei_cluster[value['servei_id']] = {
                             "items": {value['item_id']: value},
@@ -179,7 +182,7 @@ class CustomerOrderInterface(APIView):
                             "store_name": value['store_name'],
                             "platform_charge": 0.0,
                             "net_price": 0.0,
-                            "price":value['item_id']['price'],
+                            "price":value['price'],
                             "extra_charges": {},
                             "status": PENDING
                         }
