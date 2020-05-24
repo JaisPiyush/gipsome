@@ -852,7 +852,7 @@ class OrderView(APIView):
         data = request.GET
         orders = Order.objects.filter(
             Q(servei_list__contains=[data['servei_id']]) & Q(~Q(status=FINISHED) & ~Q(status=FAILED)))
-        pending_orders = orders.filter(~Q(final_servei_cluster__has_key=data['servei_id'])).order_by(
+        pending_orders = orders.filter(~Q(servei_cluster__has_key=data['servei_id'])).order_by(
             '-date_time_creation')
         non_pending_orders = orders.filter(Q(final_servei_cluster__has_key=data['servei_id'])).order_by(
             '-date_time_creation')

@@ -167,6 +167,7 @@ class CustomerOrderInterface(APIView):
                         ]['items']['quantity'] += value['quantity']
                         order.servei_cluster[value['servei_id']
                         ]['items']['price'] += value['price']
+                        order.servei_cluster[value['servei_id']]['price'] += value['price']
                         total_price += value - ['price']
                     else:
                         order.servei_list.append(value['servei_id'])
@@ -178,6 +179,7 @@ class CustomerOrderInterface(APIView):
                             "store_name": value['store_name'],
                             "platform_charge": 0.0,
                             "net_price": 0.0,
+                            "price":value['item_id']['price'],
                             "extra_charges": {},
                             "status": PENDING
                         }
@@ -202,6 +204,7 @@ class CustomerOrderInterface(APIView):
                 order.save()
                 tdmos = TDMOSystem(order)
                 tdmos.status_setter(CREATED)
+                tdmos.charge_calculator(real=False)
                 trigger.delay(order.order_id)
                 return Response({'order_id': order.order_id, 'status': order.status}, status=status.HTTP_201_CREATED)
         elif int(data['action']) == CANCEL:
@@ -587,31 +590,7 @@ class TDMOSystem:
             kill_order.delay(self.order.order_id, force=True,
                              reason='We couldn\'t find any Pilot')
         self.order.save()
-        # for servei_id in self.order.final_servei_cluster.keys():
-        #     device = MobileDevice.objects.get(locie_partner=servei_id)
-        #     device.send_message('Order Update', 'New Update on Order', data={
-        #         'click_action': 'FLUTTER_NOTIFICATION_CLICK', 'data': {'type': 'order-update', 'action': 'pilot_attach',
-        #                                                                'order_id': self.order.order_id,
-        #                                                                'otp': self.order.otp,
-        #                                                                'pilot_id': self.order.pilot_id_first,
-        #                                                                'pilot_name': self.order.pilot_name,
-        #                                                                'status': self.order.status}}, api_key=API_KEY)
-        #
-        # if self.order.pilot_cluster:
-        #     pilot_id = list(self.order.pilot_cluster.keys())[-1]
-        #     device = MobileDevice.objects.get(locie_partner=pilot_id)
-        #     device.send_message('Order Cancelled', f'New Order has arrivedOrder ID:{self.order.order_id}, because',
-        #                         data={'click_action': 'FLUTTER_NOTIFICATION_CLICK', 'data': {
-        #                             'type': 'new_order', 'order_id': self.order.order_id, 'status': self.order.status}},
-        #                         api_key=API_KEY)
-        #
-        #     device = CustomerDevice.objects.get(
-        #         customer_id=self.order.customer_id)
-        #     device.send_message('Order Cancelled',
-        #                         f'{list(self.order.pilot_cluster.values())[-1]["name"]} is assigned as your Pilot',
-        #                         data={'click_action': 'FLUTTER_NOTIFICATION_CLICK', 'data': {
-        #                             'type': 'order_update', 'order_id': self.order.order_id,
-        #                             'status': self.order.status}}, api_key=API_KEY)
+
 
     def inverse_ssu_service(self):
         """
