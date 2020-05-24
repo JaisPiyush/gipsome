@@ -309,7 +309,7 @@ class OrderServeiInterface(APIView):
                 ]['status'] = COMPLETED
                 order.save()
             elif order.delivery_required:
-                order.final_servei_cluster[data['sevei_id']]['status'] = SERVED
+                order.final_servei_cluster[data['servei_id']]['status'] = SERVED
                 TDMOSystem(order).status_setter(FINISHED)
                 order.save()
             # TDMOSystem(order.order_id).uds_service()
