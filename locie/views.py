@@ -723,27 +723,27 @@ class Analytics(APIView):
         data = request.GET
         publytics = Publytics.objects.filter(reference_id=data['store_key'])
         widthrawl = False
-        servei_id = data['servei_id']
-        orders = Order.objects.filter(servei_list__contains=[servei_id])
+        orders = Order.objects.filter(servei_list__contains=[data['servei_id']])
         order_month = orders.filter(
             Q(date_time_creation__month=timezone.now().month) & Q(date_time_creation__year=timezone.now().year))
         price_month = 0.0
         price_total = 0.0
         for order in orders:
-            if order.final_servei_cluster[servei_id]['status'] == SERVED:
-                price_month += order.final_servei_cluster[servei_id]['price']
+            if data['servei_id'] in order.final_servei_cluster.keys() and order.final_servei_cluster[data['servei_id']]['status'] == SERVED:
+                price_month += order.final_servei_cluster[data['servei_id']]['price']
         for order in order_month:
-            if order.final_servei_cluster[servei_id]['status'] == SERVED:
-                price_month += order.final_servei_cluster[servei_id]['price']
+            if data['servei_id'] in order.final_servei_cluster.keys() and order.final_servei_cluster[data['servei_id']]['status'] == SERVED:
+                price_month += order.final_servei_cluster[data['servei_id']]['price']
         failed_orders = orders.filter(
-            ~Q(final_servei_cluster__has_key=servei_id) | Q(final_servei_cluster__contains={f'{servei_id}': {
+            ~Q(final_servei_cluster__has_key=data['servei_id']) | Q(final_servei_cluster__contains={f'{data["servei_id"]}': {
                 "status": FAILED
             }}))
-        success_orders = orders.filter(Q(final_servei_cluster__contains={f'{servei_id}': {
+        success_orders = orders.filter(Q(final_servei_cluster__contains={f"{data['servei_id']}": {
             "status": SERVED
         }}))
-        all_views = sum(publytics.first().views_log.values())
-        all_view = all_views if all_views else 0
+        all_views =0
+        if publytics:
+            all_views = sum(publytics.first().views_log.values())
         this_month_order = len(orders)
         if all_views > 1000 and this_month_order >= 2:
             widthrawl = True
