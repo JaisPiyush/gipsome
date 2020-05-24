@@ -699,8 +699,9 @@ class VerifyToken(APIView):
         if token:
             token = token.first()
             if 'phone_token' in data.keys():
-                device = MobileDevice.objects.get_or_create(locie_partner=token.user.account_id,
-                                                            partnership=token.user.relation)
+                device = MobileDevice.objects.get_or_create(locie_partner=token.user.account_id)[0]
+                if 'relation' in data.keys():
+                    device.partnership = data['relation']
                 device.registration_id = data['phone_token']
                 device.save()
 
