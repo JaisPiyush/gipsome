@@ -407,7 +407,7 @@ class TDMOSystem:
           Notify every servei about orders and start reactore only if delivery required
         """
         for serveiId in self.order.servei_cluster.keys():
-            send_notification_to_customer.delay(serveiId,title='New Order',body='New Order has arrived for you! You habe 180 seconds in your hand.')
+            send_notification_to_partner.delay(serveiId,title='New Order',body='New Order has arrived for you! You habe 180 seconds in your hand.')
         if self.order.delivery_required:
             wait.delay(self.order.order_id, time=180)
         # TODO: In Store Notification Fireing and Servei Notification Firing
