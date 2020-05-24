@@ -777,10 +777,10 @@ class Analytics(APIView):
                     "total_views": 0.0
                 },
                 "orders": {
-                    "total_orders": 0,
-                    "this_month": 0,
-                    "failed_orders": 0,
-                    "success_orders": 0
+                    "total_orders": this_month_order,
+                    "this_month": len(order_month),
+                    "failed_orders": len(failed_orders),
+                    "success_orders": len(success_orders)
                 },
                 "revenue": {
                     "total": 0,
