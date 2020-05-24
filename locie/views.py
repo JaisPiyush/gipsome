@@ -803,6 +803,7 @@ class OrderHistory(APIView):
                 cluster = order.final_servei_cluster[data['servei_id']] if data[
                                                                                'servei_id'] in order.final_servei_cluster.keys() else \
                 order.servei_cluster[data['servei_id']]
+                order_status = order.status if order.status == FAILED else cluster['status']
                 returning_order.append({
                     "order_id": order.order_id,
                     "payment_COD": order.payment_COD,
@@ -812,12 +813,12 @@ class OrderHistory(APIView):
                     "quantity": cluster['quantity'],
                     "platform_charge": cluster['platform_charge'],
                     "items": cluster['items'],
-                    "status": cluster['status'],
+                    "status": order_status,
                     "delivery_required": 1 if order.delivery_required else 0,
                 }),
             return Response({"orders": returning_order}, status=status.HTTP_200_OK)
         else:
-            return Response({"orders": []}, status=status.HTTP_200_OK)
+            return Response({"orders": []}, status= status.HTTP_200_OK)
 
 
 class CustomerReview(APIView):
