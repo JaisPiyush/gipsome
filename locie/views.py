@@ -795,7 +795,7 @@ class OrderHistory(APIView):
     def get(self, request, format=None):
         data = request.GET
         orders = Order.objects.filter(
-            servei_list__contains=[data['servei_id']] & Q(Q(status=FINISHED) | Q(status=FAILED))).order_by(
+            Q(servei_list__contains=[data['servei_id']]) & Q(Q(status=FINISHED) | Q(status=FAILED))).order_by(
             '-date_time_creation')
         if orders:
             returning_order = []
