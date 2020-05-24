@@ -865,6 +865,7 @@ class OrderView(APIView):
         working_orders = []
         completed_orders = []
         for order in non_pending_orders:
+
             if order.final_servei_cluster[data['servei_id']]['status'] == WORKING:
                 working_orders.append(order)
             elif order.final_servei_cluster[data['servei_id']]['status'] == COMPLETED:

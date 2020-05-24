@@ -186,7 +186,7 @@ class OrderServeiSerializer:
         returnable_dict['net_price'] = cluster['net_price']
         returnable_dict['price'] = cluster['price']
         returnable_dict['platform_charge'] = cluster['platform_charge']
-        returnable_dict['extra_charges'] = cluster['extra_charges']
+        #extra charge to be added
         returnable_dict['status'] = cluster['status']
         returnable_dict['delivery_required'] = 1 if order.delivery_required else 0
         returnable_dict['payment_COD'] = 1 if order.payment_COD else 0
