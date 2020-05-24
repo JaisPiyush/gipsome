@@ -180,6 +180,7 @@ class OrderServeiSerializer:
             cluster = order.final_servei_cluster[self.servei_id]
         else:
             cluster = order.servei_cluster[self.servei_id]
+        print(cluster)
         returnable_dict['items'] = cluster['items']
         returnable_dict['quantity'] = cluster['quantity']
         returnable_dict['net_price'] = cluster['net_price']
@@ -193,10 +194,9 @@ class OrderServeiSerializer:
         return returnable_dict
 
     def data(self):
-        data =[]
+        retdata =[]
         for order in self.orders:
-            if self.servei_id in order.final_servei_cluster.keys() and order.final_servei_cluster[self.servei_id]['status'] != SERVED:
-                data.append(self.serialize(order))
-        return data
+            retdata.append(self.serialize(order))
+        return retdata
 
 
