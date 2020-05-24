@@ -721,7 +721,7 @@ class Analytics(APIView):
 
     def get(self, request, format=None):
         data = request.GET
-        publytics = Publytics.objects.filter(reference_id=data['store_key'])
+        publytics = Publytics.objects.filter(reference_id=data['store_key']).first()
         widthrawl = False
         servei_id = data['servei_id']
         orders = Order.objects.filter(servei_list__contains=[servei_id])
