@@ -265,8 +265,6 @@ class OrderServeiInterface(APIView):
             order = Order.objects.get(order_id=data['order_id'])
             if order.biding_bared:
                 return Response({}, status=status.HTTP_403_FORBIDDEN)
-            order.servei_cluster[data['servei_id']
-            ]['status'] = ACCEPTED
             order.servei_cluster[data['servei_id']]['status'] = WORKING
             order.final_servei_cluster[data['servei_id']
             ] = {
@@ -277,7 +275,8 @@ class OrderServeiInterface(APIView):
                 "platform_charge": order.servei_cluster[data['servei_id']]['platform_charge'],
                 "net_price": 0.0,
                 "servei_id": data['servei_id'],
-                "price": 0.0
+                "price": 0.0,
+                "status":WORKING
             }
             servei = order.servei_cluster[data['servei_id']]
             for item_id in data['items']:
