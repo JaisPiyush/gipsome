@@ -721,7 +721,7 @@ class Analytics(APIView):
 
     def get(self, request, format=None):
         data = request.GET
-        publytics = Publytics.objects.filter(reference_id=data['store_key']).first()
+        publytics = Publytics.objects.filter(reference_id=data['store_key'])
         widthrawl = False
         servei_id = data['servei_id']
         orders = Order.objects.filter(servei_list__contains=[servei_id])
@@ -742,7 +742,8 @@ class Analytics(APIView):
         success_orders = orders.filter(Q(final_servei_cluster__contains={f'{servei_id}': {
             "status": SERVED
         }}))
-        all_views = sum(publytics.views_log.values())
+        all_views = sum(publytics.first().views_log.values())
+        all_view = all_views if all_views else 0
         this_month_order = len(orders)
         if all_views > 1000 and this_month_order >= 2:
             widthrawl = True
