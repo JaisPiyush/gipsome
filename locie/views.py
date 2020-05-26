@@ -308,21 +308,22 @@ class CityCodeService(APIView):
         city = None
         # if Token.objects.filter(key=request.POST['token']):
         #     return Response({'error':'Un-authorised access'},status=status.HTTP_401_UNAUTHORIZED)
+        data = json.loads(request.body)
         try:
-            city = CityCode.objects.get(cityCode=request.POST['cityCode'])
+            city = CityCode.objects.get(cityCode=data['cityCode'])
         except:
-            city = CityCode.objects.create(cityCode=request.POST['cityCode'])
-        if not ',' in request.POST['pin_code']:
-            if request.POST['pin_code'] not in city.pin_codes:
-                city.pin_codes.append(request.POST['pin_code'])
+            city = CityCode.objects.create(cityCode=data['cityCode'])
+        if not ',' in data['pin_code']:
+            if data['pin_code'] not in city.pin_codes:
+                city.pin_codes.append(data['pin_code'])
 
         else:
-            city.pin_codes = list(set(city.pin_codes + request.POST['pin_code'].split(',')))
+            city.pin_codes = list(set(city.pin_codes + data['pin_code'].split(',')))
 
-        if 'state' in request.POST.keys():
-            city.state = request.POST['state']
-        if 'city' in request.POST.keys():
-            city.city = request.POST['city']
+        if 'state' in data.keys():
+            city.state = data['state']
+        if 'city' in data.keys():
+            city.city = data['city']
         city.save()
         serial = CityCodeSerializer(city)
         if serial and city:
