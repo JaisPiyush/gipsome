@@ -54,7 +54,7 @@ class CustomerCategoryView(APIView):
         prevCat = None
         if 'only-head' in data.keys():
             categories = Category.objects.filter(
-                Q(city_site__contains=[data['cityCode']]) & (Q(online = True) & Q(cat_type='FC')))
+                Q(city_site__contains=[data['cityCode']]) & Q(Q(online = True) & Q(cat_type='FC')))
             categories = [{"cat_id": category.cat_id, "prev_cat": category.prev_cat, "name": category.name, "image": category.image,
                            "cat_type": category.cat_type, "delivery_type": category.delivery_type}for category in categories]
 

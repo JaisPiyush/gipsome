@@ -306,8 +306,6 @@ class CityCodeService(APIView):
     def post(self, request, format=None):
 
         city = None
-        # if Token.objects.filter(key=request.POST['token']):
-        #     return Response({'error':'Un-authorised access'},status=status.HTTP_401_UNAUTHORIZED)
         data = json.loads(request.body)
         try:
             city = CityCode.objects.get(cityCode=data['cityCode'])

@@ -378,6 +378,9 @@ class TDMOSystem:
                 elif servei['price'] > 2100:
                     servei['platform_charge'] = math.ceil(
                         servei['price'] * 2 / 100)
+                # Line Between these to be removed after cost sorting
+                servei['platform_charge'] = 0.0
+                # Above should be removed
                 servei['net_price'] = servei['price'] - \
                                       servei['platform_charge']
             self.order.save()
@@ -404,6 +407,9 @@ class TDMOSystem:
                     EXCESS_MULTIPLE = 2.8
                     servei['platform_charge'] = math.ceil(
                         servei['price'] * EXCESS_MULTIPLE / 100)
+                # Line Between these to be removed after cost sorting
+                servei['platform_charge'] = 0.0
+                # Above should be removed
                 servei['net_price'] = servei['price'] - servei['platform_charge']
             self.order.save()
 

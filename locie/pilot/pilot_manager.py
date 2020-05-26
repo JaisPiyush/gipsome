@@ -81,7 +81,8 @@ class PilotManager:
     def pilot_charge(distance, uds=False):
         if not uds:
             if distance <= 3:
-                return 25
+                # The Line Below should be changed
+                return 0
             elif distance > 3:
                 return math.floor((3 * distance) + 16)
         else:
