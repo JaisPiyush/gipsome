@@ -13,12 +13,11 @@ from django.db.models import Q
 API_KEY = 'AAAAV_Ah5fM:APA91bH2dMvLUYRTpcsY4irIzEk1gQzEDQdxY0DN01-MCb_HF2OE09jXpt7-RuFHxT-YEAZym83dvWUhyvQAkYiMz1_I1htdKHxrF1NFG-fwmCawpdpTSs7IwzRa0vCzftIWKzc7MkWv'
 
 class RPMNSRegistartionUpdate(APIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def post(self, request, format=None):
         body = json.loads(request.body)
-        elif 'locie_partner' in body.keys():
+        if 'locie_partner' in body.keys():
             device,created = MobileDevice.objects.get_or_create(locie_partner=body['locie_partner'])
             if device or created:
                 if 'web' in body.keys():

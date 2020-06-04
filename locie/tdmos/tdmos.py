@@ -200,26 +200,16 @@ class CustomerOrderInterface(APIView):
 #                         "drop_charges": pilot_charge
 #                     }
 #                 else:
-                    order.extra_charges = {
-                        "delivery_charge": 0.0
-                    }
-                order.net_price = order.price + pilot_charge
+#                     order.extra_charges = {
+#                         "delivery_charge": 0.0
+#                     }
+                order.net_price = order.price + 0.0
                 order.save()
                 tdmos = TDMOSystem(order)
                 tdmos.status_setter(CREATED)
-                send_notification_to_customer.delay(
-                self.order.customer_id,
-                title='Order',
-                body=f'Your Order with Order Id - {order.order_id} has been Cancelled',
-                data={
-                       'cluster':order.servei_cluster,
-                        'phone_number':order.customer_id,
-                        'customer_data':order.customer_stack,
-                        'price':order.price,
-                        'net_price':order.net_price,
-                        
-                }
-            )
+                
+                send_notification_to_partner.delay(order.servei_cluster.keys()[0],title='New Order',body='New Order has arrived for you! You habe 180 seconds in your hand.')
+                  
 #                 tdmos.charge_calculator(real=False)
 #                 trigger.delay(order.order_id)
                 return Response({'order_id': order.order_id, 'status': order.status}, status=status.HTTP_201_CREATED)

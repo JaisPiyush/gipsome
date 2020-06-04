@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+ <script src="https://www.gstatic.com/firebasejs/7.14.6/firebase-app.js"></script>
+ <script src="https://www.gstatic.com/firebasejs/7.14.6/firebase-messaging.js"></script>
+ <script>
+     var firebaseConfig = {
+      apiKey: "AIzaSyCTg3L22YePlkbu2zbUcZd3y8bYxKuAB4I",
+      authDomain: "locie-build-1576098800784.firebaseapp.com",
+      databaseURL: "https://locie-build-1576098800784.firebaseio.com",
+      projectId: "locie-build-1576098800784",
+      storageBucket: "locie-build-1576098800784.appspot.com",
+      messagingSenderId: "377690908147",
+      appId: "1:377690908147:web:7d320fda31df02168c1e86",
+      measurementId: "G-D4KBZK0GC8"
+   };
+      firebase.initializeApp(firebaseConfig);
+      const messaging = firebase.messaging();
+      messaging.usePublicVapidKey("BL8sXxSzkuBOqzcHl_BE0tfp7UBMstHtVwwKl3AUtNotjeKczXRjtW7AafDXSacbRfcwAhEsj9pldGMu171CF-Y");
+ </script>
+<script>
+    function sendTokenToServer(token){
+
+    }
+    messaging.getToken().then((currentToken) => {
+  if (currentToken) {
+    sendTokenToServer(currentToken);
+  } else {
+    // Show permission request.
+    console.log('No Instance ID token available. Request permission to generate one.');
+    // Show permission UI.
+    setTokenSentToServer(false);
+  }
+}).catch((err) => {
+  console.log('An error occurred while retrieving token. ', err);
+  setTokenSentToServer(false);
+});
+    messaging.onTokenRefresh(() => {
+  messaging.getToken().then((refreshedToken) => {
+    console.log('Token refreshed.');
+    // Indicate that the new Instance ID token has not yet been sent to the
+    // app server.
+    setTokenSentToServer(false);
+    // Send Instance ID token to app server.
+    sendTokenToServer(refreshedToken);
+    // ...
+  }).catch((err) => {
+    console.log('Unable to retrieve refreshed token ', err);
+  });
+});
+</script>
+
+
+</body>
+
+</html>

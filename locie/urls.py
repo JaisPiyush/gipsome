@@ -4,6 +4,7 @@ from .gadgets.rpmns import *
 from .tdmos.tdmos import OrderServeiInterface
 urlpatterns = [
     #Check Connetcion
+    path('admin_view/',AdminView.as_view()),
     path('checkConn/',CheckConnection.as_view()),
     #account creation
     path('accountcreate/suit/', AccountAdmission.as_view()),

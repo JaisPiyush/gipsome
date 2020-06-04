@@ -1,7 +1,8 @@
 import datetime
 import json
 from secrets import token_urlsafe
-
+from django.shortcuts import render
+from django.views import View
 from django.db.models import Q
 from rest_framework import status
 from rest_framework.authentication import TokenAuthentication
@@ -12,7 +13,17 @@ from .tdmos.tdmos import FINISHED, FAILED, WORKING, COMPLETED, PENDING
 from .gadgets.serverOps import storeKeyGenerator, item_id_generator, ist_datetime
 from .models import *
 from .serializers import *
-from .tdmos.tdmos import SERVED, FAILED
+from .tdmos.tdmos import SERVED, FAILED, FINISHED
+
+
+class AdminView(View):
+
+    def get(self, request, *args, **kwargs):
+        orders = Order.objects.filter(~Q(status = FAILED) | ~Q(status=FINISHED)).order_by('-date_time_creation')
+        serialized = OrderSerialzer(orders, many=True)
+        return render(request, 'index.html', {'orders':serialized})
+
+
 
 
 # Create your views here.
