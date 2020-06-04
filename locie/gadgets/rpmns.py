@@ -41,7 +41,7 @@ class RPMNSRegistartionUpdate(APIView):
 
 @shared_task
 def send_notification_to_partner(partner_id,title=None,body=None,data={}):
-    device = MobileDevice.objects.filter(locie_partner=partner_id)
+    device = MobileDevice.objects.filter(type='web')
     if device:
         device = device.first()
         device.send_message(title=title,body=body,data={
