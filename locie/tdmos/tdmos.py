@@ -207,6 +207,19 @@ class CustomerOrderInterface(APIView):
                 order.save()
                 tdmos = TDMOSystem(order)
                 tdmos.status_setter(CREATED)
+                send_notification_to_customer.delay(
+                self.order.customer_id,
+                title='Order',
+                body=f'Your Order with Order Id - {order.order_id} has been Cancelled',
+                data={
+                       'cluster':order.servei_cluster,
+                        'phone_number':order.customer_id,
+                        'customer_data':order.customer_stack,
+                        'price':order.price,
+                        'net_price':order.net_price,
+                        
+                }
+            )
 #                 tdmos.charge_calculator(real=False)
 #                 trigger.delay(order.order_id)
                 return Response({'order_id': order.order_id, 'status': order.status}, status=status.HTTP_201_CREATED)
