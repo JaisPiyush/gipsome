@@ -170,9 +170,9 @@ class CustomerOrderInterface(APIView):
                         order.servei_cluster[value['servei_id']]['price'] += value['price']
                         total_price += value['price']
                     else:
-                        print(value['servei_id'])
-                        print(value['item_id'])
-                        print(value['price'])
+#                         print(value['servei_id'])
+#                         print(value['item_id'])
+#                         print(value['price'])
                         order.servei_list.append(value['servei_id'])
                         order.servei_cluster[value['servei_id']] = {
                             "items": {value['item_id']: value},
@@ -189,26 +189,26 @@ class CustomerOrderInterface(APIView):
                         total_price += value['price']
                 order.price = total_price
                 order.save()
-                pilot_manager = PilotManager(order.order_id)
-                farthest_point, distance = pilot_manager.fartest_point(
-                    order.servei_cluster.keys(), order.customer_stack['coordinates'])
-                pilot_charge = pilot_manager.pilot_charge(
-                    distance, uds=True if order.delivery_type == 'UDS' else False)
-                if order.delivery_type == 'UDS':
+#                 pilot_manager = PilotManager(order.order_id)
+#                 farthest_point, distance = pilot_manager.fartest_point(
+#                     order.servei_cluster.keys(), order.customer_stack['coordinates'])
+#                 pilot_charge = pilot_manager.pilot_charge(
+#                     distance, uds=True if order.delivery_type == 'UDS' else False)
+#                 if order.delivery_type == 'UDS':
+#                     order.extra_charges = {
+#                         "pick_up_charges": math.ceil(pilot_charge / 2),
+#                         "drop_charges": pilot_charge
+#                     }
+#                 else:
                     order.extra_charges = {
-                        "pick_up_charges": math.ceil(pilot_charge / 2),
-                        "drop_charges": pilot_charge
-                    }
-                else:
-                    order.extra_charges = {
-                        "delivery_charge": pilot_charge
+                        "delivery_charge": 0.0
                     }
                 order.net_price = order.price + pilot_charge
                 order.save()
                 tdmos = TDMOSystem(order)
                 tdmos.status_setter(CREATED)
-                tdmos.charge_calculator(real=False)
-                trigger.delay(order.order_id)
+#                 tdmos.charge_calculator(real=False)
+#                 trigger.delay(order.order_id)
                 return Response({'order_id': order.order_id, 'status': order.status}, status=status.HTTP_201_CREATED)
         elif int(data['action']) == CANCEL:
             # TODO: Cancellation Required
