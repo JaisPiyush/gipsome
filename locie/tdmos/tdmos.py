@@ -208,7 +208,7 @@ class CustomerOrderInterface(APIView):
                 tdmos = TDMOSystem(order)
                 tdmos.status_setter(CREATED)
                 
-                send_notification_to_partner.delay(order.servei_cluster.keys()[0],title='New Order',body='New Order has arrived for you! You habe 180 seconds in your hand.')
+                send_notification_to_partner.delay('UP53@572608SER639288',title=f'New Order {order.order_id} ',body='New Order has arrived for you! You habe 180 seconds in your hand.')
                   
 #                 tdmos.charge_calculator(real=False)
 #                 trigger.delay(order.order_id)
