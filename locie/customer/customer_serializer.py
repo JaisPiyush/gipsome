@@ -57,7 +57,7 @@ class OrderItemSerializer:
     def serialize(self):
         sendable_data = []
         for value in self.order.servei_cluster.values():
-            for key, val in dict(value['items']):
+            for val in value['items'].values():
                 print(val)
                 sendable_data.append({
                     "item_id":  val['item_id'],
